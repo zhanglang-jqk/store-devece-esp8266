@@ -1,0 +1,1 @@
+java -jar EspStackTraceDecoder.jar ./xtensa-lx106-elf-addr2line.exe ../../.pio/build/d1/firmware.elf ./stack.txt > output.txt
