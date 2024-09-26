@@ -227,12 +227,22 @@ uint8_t NetClient::ConnWifi(String ssid, String password)
 
 bool NetClient::ConnServer(char *server, uint16_t port, char *id, char *username, char *password)
 {
-  // mqtt_client.disconnect();
-  // delay(500), ESP.wdtFeed(), delay(500), ESP.wdtFeed();
-  mqtt_client.setClient(wifi_client);
-  mqtt_client.setServer(server, port);
+  // mqtt_client.setClient(wifi_client);
+  // mqtt_client.setServer(server, port);
+  // mqtt_client.setCallback(callback);
+  // mqtt_conn = mqtt_client.connect(id, username, password);
 
+  // TODO temporary modify to test use
+  // ip£º106.75.224.82
+  // ¶Ë¿Ú£º1884
+  // ÕËºÅ£ºdwy_gaiban
+  // ÃÜÂë£ºgaibanmenjin
+  mqtt_client.setClient(wifi_client);
+  IPAddress ip(106, 75, 224, 82);
+  mqtt_client.setServer(ip, port);
   mqtt_client.setCallback(callback);
+  username = "dwy_gaiban";
+  password = "gaibanmenjin";
   mqtt_conn = mqtt_client.connect(id, username, password);
   return mqtt_conn;
 }

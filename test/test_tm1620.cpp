@@ -34,6 +34,7 @@ void test_display_();
 void test_display_all_number();
 void test_display_colon();
 void test_display_toggle_colon();
+void test_count_down_sec();
 /* variable definition ----------------------------------------------------------------------------------------------------- */
 
 /* function implementation ------------------------------------------------------------------------------------------------- */
@@ -47,8 +48,7 @@ void test_turn_off_display()
 void test_display_all_number()
 {
   static uint8_t val = 0;
-  if (val++ >= 10)
-    val = 0;
+  if (val++ >= 10) val = 0;
   tm.DispSeg(0, val);
   tm.DispSeg(1, val);
   tm.DispSeg(2, val);
@@ -69,10 +69,10 @@ void test_display_()
   // tm.DispSeg(3, TM1620::SEG_NOT_DISPLAY);
   // delay(100);
   // delay(1000);
-  tm.DispSeg(0, TM1620::SEG_VAL_);
-  tm.DispSeg(1, TM1620::SEG_VAL_);
-  tm.DispSeg(2, TM1620::SEG_VAL_);
-  tm.DispSeg(3, TM1620::SEG_VAL_);
+  tm.DispSeg(0, TM1620::SEG_ROD);
+  tm.DispSeg(1, TM1620::SEG_ROD);
+  tm.DispSeg(2, TM1620::SEG_ROD);
+  tm.DispSeg(3, TM1620::SEG_ROD);
 }
 
 void test_display_colon()
@@ -126,6 +126,27 @@ void test_relay()
   relay_status = !relay_status;
   digitalWrite(RELAY_PIN, relay_status);
 }
+
+void test_count_down_sec()
+{
+  static uint8_t num = 0;
+  if (num++ > 9) num = 0;
+
+  // tm.DispSeg(num, TM1620::SEG_COLON);
+
+  uint8_t seg_code = tm.GetCodeNum(num);
+
+  static uint8_t f = 0;
+
+  if (f == 0)
+    tm.DispSegCode(1, seg_code | 0x80);
+  else
+  {
+    tm.DispSegCode(1, seg_code);
+  }
+  f = !f;
+}
+
 void setup()
 {
   // NOTE!!! Wait for >2 secs
@@ -137,7 +158,7 @@ void setup()
   Serial.begin(115200);
   tpf("system begin\n");
   tm.Init(STB_PIN, CLK_PIN, DIO_PIN);
-  pinMode(RELAY_PIN, OUTPUT);
+  // pinMode(RELAY_PIN, OUTPUT);
 }
 
 void loop()
@@ -149,8 +170,9 @@ void loop()
   // RUN_TEST(test_display_);
   // RUN_TEST(test_relay);
   // RUN_TEST(test_display_all_number);
-  RUN_TEST(test_display_colon);
-  // delay(1000);
+  // RUN_TEST(test_display_colon);
+  RUN_TEST(test_count_down_sec);
+  delay(1000);
 
   // UNITY_END(); // stop unit testinu
 }

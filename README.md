@@ -180,3 +180,11 @@ drive_no/config_modify
 14. 获取倒计时 {"cmd14":""}   // 终端将往device_no/device_sub_topic上报,上包的数据格式为 json 格式
 15. 打开倒计时 {"cmd15":""}   // 注意,设置了倒计时时间后,需要发送此命令后,才开始进行倒计时
 16. 关闭倒计时
+
+### 消息上报
+
+终端运行过程中,在运行至特殊的状态时,会主动往device_no/device_pub_topic上报数据,上报格式为 json 格式
+
+1. 倒计时完成时,上报:{"count down":"finish"}
+2. 接收到获取继电器状态,上报:{"cmd8":"on"}或者{"cmd8":"off"}
+3. 语音播报时,上报:{"cmd11":"ok"} 或者 {"cmd11":"fail"}

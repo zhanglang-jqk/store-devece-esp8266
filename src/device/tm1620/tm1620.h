@@ -34,7 +34,7 @@ class TM1620
 public:
   enum
   {
-    SEG_VAL_ = 21, // 显示“-”
+    SEG_ROD = 21, // 显示“-”
     SEG_NOT_DISPLAY = 23,
     SEG_COLON = 20, // 显示“:”,仅在第二位显示
   };
@@ -49,8 +49,9 @@ public:
   void WriteByte(uint8_t byte);
   void Write(TM1620_CMD cmd, uint8_t data);
   uint8_t DispSeg(uint8_t seg_num, uint8_t number);
+  uint8_t DispSegCode(uint8_t seg_num, uint8_t code);
+  uint8_t GetCodeNum(uint8_t number);
   void TurnOffDispaly(); // TODO 无法关闭显示
-  // void DispSegNone();
 
 private:
   uint8_t stb_pin;

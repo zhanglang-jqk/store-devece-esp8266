@@ -85,6 +85,12 @@ void TM1620::Write(TM1620_CMD cmd, uint8_t data)
   }
 }
 
+uint8_t TM1620::GetCodeNum(uint8_t number)
+{
+  uint8_t _number = font_code[number];
+  return _number;
+}
+
 uint8_t TM1620::DispSeg(uint8_t seg_num, uint8_t number)
 {
   uint8_t _number = font_code[number];
@@ -110,7 +116,7 @@ void TM1620::Init(uint8_t stb_pin, uint8_t clk_pin, uint8_t dio_pin)
     DispSeg(i, 0x20);
 
   // DispSegNone();
-  DispSeg(0, TM1620::SEG_VAL_), DispSeg(1, TM1620::SEG_VAL_), DispSeg(2, TM1620::SEG_VAL_), DispSeg(3, TM1620::SEG_VAL_);
+  DispSeg(0, TM1620::SEG_ROD), DispSeg(1, TM1620::SEG_ROD), DispSeg(2, TM1620::SEG_ROD), DispSeg(3, TM1620::SEG_ROD);
 }
 
 void TM1620::STB_HIGH()
@@ -150,6 +156,19 @@ void TM1620::TurnOffDispaly()
   STB_HIGH();
 }
 
+uint8_t TM1620::DispSegCode(uint8_t seg_num, uint8_t code)
+{
+  Write(TM1620_DISP_MODE, 0x02);       // 显示模式6位8段
+  Write(TM1620_DATA, FIXED_ADDR_MODE); // 固定地址模式
+
+  Write(TM1620_ADDR, 0x00 + seg_num * 2); // 起始地址0xC0
+  WriteByte(code);
+
+  STB_HIGH();
+  Write(TM1620_BRIGHT, MAX_TUBE_BRIGHTNESS); // 亮度设置
+
+  return 0;
+}
 // void TM1620::DispSegNone()
 // {
 //   for (int i = 0; i < 4; i++)

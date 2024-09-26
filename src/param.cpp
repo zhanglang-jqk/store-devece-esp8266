@@ -173,7 +173,7 @@ void Param::UpdateParam_pool()
   uint8_t isok = memcmp(&cur_data, &last_data, sizeof(cur_data));
   if (isok != 0)
   {
-    tpf("before param:"), tpt(ToString(&last_data));
+    // tpf("before param:"), tpt(ToString(&last_data));
     for (int id = 0; id < Param::PARAM_NUM; id++)
     {
       uint8_t *p_cur_param = GetCurParamAddr(id);
@@ -184,7 +184,7 @@ void Param::UpdateParam_pool()
         param_tab.WriteParam(id, p_cur_param, param_size);
       }
     }
-    tpf("update param:"), tpt(ToString(&cur_data));
+    // tpf("update param:"), tpt(ToString(&cur_data));
     memcpy(&last_data, &cur_data, sizeof(cur_data));
   }
 }

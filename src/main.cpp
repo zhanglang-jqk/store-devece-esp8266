@@ -36,14 +36,14 @@
 #define ON_LED_SIGNAL 0
 #define OFF_LED_SIGNAL 1
 
-#define RELAY_GPIO 16
+#define RELAY_GPIO 5
 #define KEY_GPIO 2
 
 #define CLK_PIN 14
 #define DIO_PIN 13
 #define STB_PIN 12
 
-#define TTS_PIN_RX 5
+#define TTS_PIN_RX 16
 #define TTS_PIN_TX 4
 /* type definition ------------------------------------------------------------------------------------------------- */
 
@@ -62,6 +62,13 @@ TTS tts;
 TM1620 disp;
 
 uint8_t g_tmpbuf[1024];
+
+typedef struct
+{
+  uint8_t topic[32];
+  uint8_t payload[32];
+  bool send_f;
+} PublicData_t;
 
 struct
 {
@@ -108,7 +115,9 @@ struct
     uint8_t stat;
     uint32_t count_down_inc_sec;
     // uint32_t count_down_inc_minute;
-    uint32_t last_ms_st;
+    uint32_t minute_last_ms_st;
+    uint32_t sec_last_ms_st;
+    uint8_t disp_colon_f;
   } count_down_fsm;
 
   struct
@@ -150,6 +159,32 @@ struct
     const uint8_t MAX_RETRY_CNT = 3;
   } conn_mqtt_svr_fsm;
 
+  struct
+  {
+    uint8_t stat;
+    uint32_t last_ms;
+    const uint16_t LOOP_PERIOD_MS = 500;
+    bool disp_f;
+  } net_seg_indicate_fsm;
+
+  struct
+  {
+    uint8_t stat; // 指示联网状态或指示倒计时状态
+    const uint16_t MAIN_SCAN_PERIOD_MS = 500;
+    uint32_t main_last_ms;
+    bool conn_svr_f;
+    bool disp_val_f;
+  } seg_disp_fsm;
+
+  struct // TODO wait for implement
+  {
+    PublicData_t report_count_down_finish;
+    PublicData_t report_relay_state_update;
+    PublicData_t report_query_relay_state;
+    PublicData_t report_play_voice_cmd_ok;
+    PublicData_t report_play_voice_cmd_err;
+  } public_data_fsm;
+
 } ctrl_fsm;
 /* function declaration ------------------------------------------------------------------------------------------------- */
 void Key_cb(Key::KeyEvent_et key_event);
@@ -186,8 +221,6 @@ void loop()
       // param.ResetAllParamToDefault();
       param.LoadAllParam();
       tpt(param.ToString(&param.cur_data));
-
-      relay.Set(param.cur_data.relay);
 
       ctrl_fsm.stat = ctrl_fsm.CONN_WIFI_STAT;
     }
@@ -281,14 +314,20 @@ void loop()
       }
       else
       {
+        // param.cur_data.count_down_minute = 10;
+        // ctrl_fsm.count_down_fsm.count_down_start_f = true;
+
         tpf("subscribe all topics is successful");
         ctrl_fsm.retry_mqtt_subpub_cnt = 0;
         ctrl_fsm.stat = ctrl_fsm.APP_LOOP_STAT;
+
+        relay.Set(param.cur_data.relay);
       }
     }
     else if (ctrl_fsm.stat == ctrl_fsm.SYS_RESTART_STAT)
     {
-      tp();
+      // tp();
+      tpf("reset system for retry to run system");
       ESP.restart();
     }
     else if (ctrl_fsm.stat == ctrl_fsm.WIFI_INFO_CONFIG_STAT)
@@ -310,6 +349,7 @@ void loop()
           ctrl_fsm.web_server_fsm.ap_en = false;
           ctrl_fsm.wifi_cfg_fsm.stat = 0;
           ctrl_fsm.stat = ctrl_fsm.CONN_WIFI_STAT;
+          ctrl_fsm.web_server_fsm.config_finish_f = false;
         }
       }
     }
@@ -333,7 +373,7 @@ void loop()
     ctrl_fsm.last_ms_st = millis();
   }
 
-#if 0
+#if 1
   if (millis() - ctrl_fsm.play_voice_fsm.period_last_ms_st > ctrl_fsm.play_voice_fsm.LOOP_PERIOD_MS) // paly voice logic
   {
     if (ctrl_fsm.play_voice_fsm.play_cmd_f)
@@ -355,7 +395,7 @@ void loop()
 
         uint8_t sbuf[32];
         memset(sbuf, 0, sizeof(sbuf));
-        cmd_pkt.BuildJsonPkt((char *)sbuf, CmdPkt::PLAY_VOICE, (char *)"successful");
+        cmd_pkt.BuildJsonPkt((char *)sbuf, CmdPkt::PLAY_VOICE, (char *)"ok");
         net_client.Publish((char *)param.cur_data.device_pub_topic, (char *)sbuf);
 
         ctrl_fsm.play_voice_fsm.play_cmd_f = false;
@@ -372,7 +412,7 @@ void loop()
           tpf("retry play voice is failed that try %d times and then publish message to MQTT server", ctrl_fsm.play_voice_fsm.RETRY_TTS_CNT);
           uint8_t sbuf[32];
           memset(sbuf, 0, sizeof(sbuf));
-          cmd_pkt.BuildJsonPkt((char *)sbuf, CmdPkt::PLAY_VOICE, (char *)"failed");
+          cmd_pkt.BuildJsonPkt((char *)sbuf, CmdPkt::PLAY_VOICE, (char *)"fail");
           net_client.Publish((char *)param.cur_data.device_pub_topic, (char *)sbuf);
 
           ctrl_fsm.play_voice_fsm.play_cmd_f = false;
@@ -390,91 +430,155 @@ void loop()
     ctrl_fsm.play_voice_fsm.period_last_ms_st = millis();
   }
 #endif
-#if 0
-  { // count down logic
-    if (ctrl_fsm.count_down_fsm.stat == 0)
+#if 1 // 数码管显示逻辑
+  if (millis() - ctrl_fsm.seg_disp_fsm.main_last_ms >= ctrl_fsm.seg_disp_fsm.MAIN_SCAN_PERIOD_MS)
+  {
+    if (net_client.GetMqttConn() == false)
     {
-      if (ctrl_fsm.count_down_fsm.count_down_start_f)
-      {
-
-        uint8_t hour = param.cur_data.count_down_minute / 60;
-        uint8_t hour_10 = hour / 10 % 10, hour_1 = hour % 10;
-        uint8_t minute = param.cur_data.count_down_minute % 60;
-        uint8_t minute_10 = minute / 10 % 10, minute_1 = minute % 10;
-
-        tpf("count down minute is %d", param.cur_data.count_down_minute);
-        tpf("hour_10:%d, hour_1:%d, minute_10:%d, minute_1:%d", hour_10, hour_1, minute_10, minute_1);
-        uint8_t valid_num = floor(log10(param.cur_data.count_down_minute) + 1); // note: log10() input value must be greater than 0
-        for (int i = 0; i < 4 - valid_num; i++)
-        {
-          disp.DispSeg(i, TM1620::SEG_NOT_DISPLAY);
-        }
-        uint8_t skip_num = 4 - valid_num;
-        switch (skip_num)
-        {
-        case 0:
-          disp.DispSeg(0, hour_10);
-        case 1:
-          disp.DispSeg(1, hour_1);
-        case 2:
-          disp.DispSeg(2, minute_10);
-        case 3:
-          disp.DispSeg(3, minute_1);
-        }
-
-        ctrl_fsm.count_down_fsm.stat = 1;
-        ctrl_fsm.count_down_fsm.last_ms_st = millis();
-      }
+      ctrl_fsm.seg_disp_fsm.stat = 1;
     }
-    else if (ctrl_fsm.count_down_fsm.stat == 1)
+
+    if (ctrl_fsm.seg_disp_fsm.stat == 0) // it display at power on
     {
-      if (ctrl_fsm.count_down_fsm.count_down_start_f)
-      {
-        if (millis() - ctrl_fsm.count_down_fsm.last_ms_st >= 60 * 1000) // 1 minute
-        {
-          if (param.cur_data.count_down_minute == 0)
-          {
-            ctrl_fsm.count_down_fsm.count_down_start_f = false;
-            ctrl_fsm.count_down_fsm.stat = 0;
-          }
-          else
-          {
-            param.cur_data.count_down_minute--;
-
-            uint8_t hour = param.cur_data.count_down_minute / 60;
-            uint8_t hour_10 = hour / 10 % 10, hour_1 = hour % 10;
-            uint8_t minute = param.cur_data.count_down_minute % 60;
-            uint8_t minute_10 = minute / 10 % 10, minute_1 = minute % 10;
-
-            tpf("count down minute is %d", param.cur_data.count_down_minute);
-            tpf("hour_10:%d, hour_1:%d, minute_10:%d, minute_1:%d", hour_10, hour_1, minute_10, minute_1);
-            uint8_t valid_num = floor(log10(param.cur_data.count_down_minute) + 1); // note: log10() input value must be greater than 0
-            for (int i = 0; i < 4 - valid_num; i++)
-            {
-              disp.DispSeg(i, TM1620::SEG_NOT_DISPLAY);
-            }
-            uint8_t skip_num = 4 - valid_num;
-            switch (skip_num)
-            {
-            case 0:
-              disp.DispSeg(0, hour_10);
-            case 1:
-              disp.DispSeg(1, hour_1);
-            case 2:
-              disp.DispSeg(2, minute_10);
-            case 3:
-              disp.DispSeg(3, minute_1);
-            }
-          }
-          ctrl_fsm.count_down_fsm.last_ms_st = millis();
-        }
-      }
+      disp.DispSeg(0, TM1620::SEG_ROD), disp.DispSeg(1, TM1620::SEG_ROD), disp.DispSeg(2, TM1620::SEG_ROD), disp.DispSeg(3, TM1620::SEG_ROD);
+      ctrl_fsm.seg_disp_fsm.stat = 1;
+    }
+    else if (ctrl_fsm.seg_disp_fsm.stat == 1) // 断网时,数码管闪烁"-"提示
+    {
+      if (ctrl_fsm.seg_disp_fsm.disp_val_f)
+        disp.DispSeg(0, TM1620::SEG_NOT_DISPLAY), disp.DispSeg(1, TM1620::SEG_NOT_DISPLAY), disp.DispSeg(2, TM1620::SEG_NOT_DISPLAY), disp.DispSeg(3, TM1620::SEG_NOT_DISPLAY);
       else
+        disp.DispSeg(0, TM1620::SEG_ROD), disp.DispSeg(1, TM1620::SEG_ROD), disp.DispSeg(2, TM1620::SEG_ROD), disp.DispSeg(3, TM1620::SEG_ROD);
+
+      ctrl_fsm.seg_disp_fsm.disp_val_f = !ctrl_fsm.seg_disp_fsm.disp_val_f;
+
+      if (net_client.GetMqttConn() == true)
       {
-        disp.DispSeg(0, TM1620::SEG_COLON), disp.DispSeg(1, TM1620::SEG_COLON), disp.DispSeg(2, TM1620::SEG_COLON), disp.DispSeg(3, TM1620::SEG_COLON);
-        ctrl_fsm.count_down_fsm.stat = 0;
+        disp.DispSeg(0, TM1620::SEG_ROD), disp.DispSeg(1, TM1620::SEG_ROD), disp.DispSeg(2, TM1620::SEG_ROD), disp.DispSeg(3, TM1620::SEG_ROD);
+        ctrl_fsm.seg_disp_fsm.stat = 2;
       }
     }
+    else if (ctrl_fsm.seg_disp_fsm.stat == 2)
+    {
+      if (ctrl_fsm.count_down_fsm.stat == 0) // wait for count down enable
+      {
+        if (ctrl_fsm.count_down_fsm.count_down_start_f) ctrl_fsm.count_down_fsm.stat = 1;
+      }
+      else if (ctrl_fsm.count_down_fsm.stat == 1) // display count down on number segment
+      {
+
+        if ((millis() - ctrl_fsm.count_down_fsm.minute_last_ms_st >= 60 * 1000) || (ctrl_fsm.count_down_fsm.minute_last_ms_st == 0)) // 1 minute
+        {
+          tp();
+          if (ctrl_fsm.count_down_fsm.minute_last_ms_st != 0) param.cur_data.count_down_minute--;
+
+          uint8_t hour = param.cur_data.count_down_minute / 60;
+          uint8_t hour_10 = hour / 10 % 10, hour_1 = hour % 10;
+          uint8_t minute = param.cur_data.count_down_minute % 60;
+          uint8_t minute_10 = minute / 10 % 10, minute_1 = minute % 10;
+
+          tpf("count down minute is %d", param.cur_data.count_down_minute);
+          tpf("hour_10:%d, hour_1:%d, minute_10:%d, minute_1:%d", hour_10, hour_1, minute_10, minute_1);
+
+          for (int i = 0; i < 4; i++)
+            disp.DispSeg(i, TM1620::SEG_NOT_DISPLAY);
+
+          uint8_t skip_num = 0;
+          if (param.cur_data.count_down_minute / 60 >= 10)
+            skip_num = 0;
+          else if (param.cur_data.count_down_minute / 60 >= 1)
+            skip_num = 1;
+          else if (param.cur_data.count_down_minute % 60 >= 10)
+            skip_num = 2;
+          else if (param.cur_data.count_down_minute % 60 >= 1)
+            skip_num = 3;
+          switch (skip_num)
+          {
+          case 0:
+            disp.DispSeg(0, hour_10);
+          case 1:
+            disp.DispSeg(1, hour_1);
+          case 2:
+            disp.DispSeg(2, minute_10);
+          case 3:
+            disp.DispSeg(3, minute_1);
+          }
+
+          ctrl_fsm.count_down_fsm.minute_last_ms_st = millis();
+        }
+        if ((millis() - ctrl_fsm.count_down_fsm.sec_last_ms_st >= 1000) || (ctrl_fsm.count_down_fsm.sec_last_ms_st == 0)) // 1s
+        {
+          uint8_t skip_num = 0;
+          if (param.cur_data.count_down_minute / 60 >= 10)
+            skip_num = 0;
+          else if (param.cur_data.count_down_minute / 60 >= 1)
+            skip_num = 1;
+          else if (param.cur_data.count_down_minute % 60 >= 10)
+            skip_num = 2;
+          else if (param.cur_data.count_down_minute % 60 >= 1)
+            skip_num = 3;
+          // tpf("skip_num:%d", skip_num);
+          if (skip_num > 1) // only toggle display ":"
+          {
+            if (ctrl_fsm.count_down_fsm.disp_colon_f)
+            {
+              // tp();
+              disp.DispSeg(1, TM1620::SEG_NOT_DISPLAY);
+            }
+            else
+            {
+              // tp();
+              disp.DispSeg(1, TM1620::SEG_COLON);
+            }
+          }
+          else // must be display number and ":"
+          {
+            uint8_t hour = param.cur_data.count_down_minute / 60;
+            uint8_t hour_1 = hour % 10;
+
+            if (ctrl_fsm.count_down_fsm.disp_colon_f)
+            {
+              // tp();
+              disp.DispSegCode(1, disp.GetCodeNum(hour_1)); // only display "number"
+            }
+            else
+            {
+              // tp();
+              disp.DispSegCode(1, disp.GetCodeNum(hour_1) | 0x80); // display ":" and "number"
+            }
+          }
+
+          ctrl_fsm.count_down_fsm.disp_colon_f = !ctrl_fsm.count_down_fsm.disp_colon_f;
+          ctrl_fsm.count_down_fsm.sec_last_ms_st = millis();
+        }
+
+        if (param.cur_data.count_down_minute == 0)
+        {
+          ctrl_fsm.count_down_fsm.count_down_start_f = false;
+        }
+        if (ctrl_fsm.count_down_fsm.count_down_start_f == false)
+        {
+          ctrl_fsm.count_down_fsm.stat = 2;
+        }
+      }
+      // then count down finished or received "count down stop" cmd
+      // reset default content to number segment
+      if (ctrl_fsm.count_down_fsm.stat == 2)
+      {
+        // tp();
+        disp.DispSeg(0, TM1620::SEG_ROD), disp.DispSeg(1, TM1620::SEG_ROD), disp.DispSeg(2, TM1620::SEG_ROD), disp.DispSeg(3, TM1620::SEG_ROD);
+        ctrl_fsm.count_down_fsm.stat = 0;
+        ctrl_fsm.count_down_fsm.minute_last_ms_st = 0;
+        ctrl_fsm.count_down_fsm.sec_last_ms_st = 0;
+
+        uint8_t sbuf[32];
+        memset(sbuf, 0, sizeof(sbuf));
+        cmd_pkt.BuildJsonPkt((char *)sbuf, "count down", (char *)"finish");
+        net_client.Publish((char *)param.cur_data.device_pub_topic, (char *)sbuf);
+      }
+    }
+
+    ctrl_fsm.seg_disp_fsm.main_last_ms = millis();
   }
 #endif
 

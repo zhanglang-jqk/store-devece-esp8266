@@ -28,7 +28,8 @@ public:
 
   enum
   {
-    DEFAULT_LONG_TIME_MS = 2000,
+    DEFAULT_LONG_TIME_MS = 2000,       // more than 5000ms mean is long press
+    DEFAULT_SHORT_PRESS_TIME_MS = 500, // less than 1000ms mean is short press
     // DEFAULT_DOUBLE_INTERVAL_TIME_MS = 200
   };
 
@@ -47,6 +48,9 @@ public:
     uint32_t last_ms;
     const uint32_t IDENTIFY_MS = 500;
     uint32_t press_ms_st[32];
+
+    uint32_t long_cnt;
+    uint8_t long_stat;
   } FSM_t;
   /* typedef -------------------- */
 

@@ -48,7 +48,9 @@ public:
     //   serial->write(sendbuf, sizeof(sendbuf));
     //   tpbuf(sendbuf, sizeof(sendbuf));
     //   uint8_t ret_byte = serial->read(WAIT_READ_CH_MS);
-    //   if (ret_byte == 0x4f)
+    //   tpf("%x", ret_byte);
+    //   // if (ret_byte == 0x4f)
+    //   if (ret_byte == 0xfd) // 由于软件串口的问题，这里可能会读取到错误的数据,待优化
     //   {
     //     // tts is idle
     //     Serial.println("tts is idle");
