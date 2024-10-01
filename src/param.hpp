@@ -159,6 +159,7 @@ public:
 private:
   ParamTable param_tab;
   uint8_t *GetDefParamAddr(uint8_t id);
+  uint8_t *GetLastParamAddr(uint8_t id);
   uint8_t *GetCurParamAddr(uint8_t id);
   uint8_t GetParamSize(uint8_t id);
 };

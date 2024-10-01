@@ -12,6 +12,7 @@
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
 #include <Ticker.h>
+#include <DNSServer.h>
 
 #include "digit_out.h"
 #include "led.h"
@@ -60,6 +61,9 @@ Bonezegei_SoftSerial softserial(TTS_PIN_RX, TTS_PIN_TX);
 
 TTS tts;
 TM1620 disp;
+DNSServer dnsServer;
+const byte DNS_PORT = 53;
+IPAddress apIP(192, 168, 4, 1);
 
 uint8_t g_tmpbuf[1024];
 
@@ -74,11 +78,11 @@ struct
 {
   enum
   {
-    RETRY_WIFI_CONN_CNT = 3,   // WIFI Á¬½ÓÖØÊÔ´ÎÊı
-    RETRY_MQTT_CONN_CNT = 3,   // MQTT Á¬½ÓÖØÊÔ´ÎÊı
-    RETRY_MQTT_SUBPUB_CNT = 3, // MQTT ¶©ÔÄ·¢²¼ÖØÊÔ´ÎÊı
+    RETRY_WIFI_CONN_CNT = 3,   // WIFI æ©ç‚´å¸´é–²å¶ˆç˜¯å¨†â„ƒæšŸ
+    RETRY_MQTT_CONN_CNT = 3,   // MQTT æ©ç‚´å¸´é–²å¶ˆç˜¯å¨†â„ƒæšŸ
+    RETRY_MQTT_SUBPUB_CNT = 3, // MQTT ç’ãˆ¤æ§„é™æˆç«·é–²å¶ˆç˜¯å¨†â„ƒæšŸ
 
-    LOOP_PERIOD_MS = 50, // Ö÷Ñ­»·ÖÜÆÚ
+    LOOP_PERIOD_MS = 50, // æ¶“è¯²æƒŠéœîˆšæ‡†éˆ?
 
     INIT_STAT,
     CONN_WIFI_STAT,
@@ -94,15 +98,15 @@ struct
   uint8_t retry_mqtt_subpub_cnt = 0;
   uint8_t stat = INIT_STAT;
 
-  uint32_t last_ms_st = 0; // ÉÏ´ÎÊ±¼ä´Á
+  uint32_t last_ms_st = 0; // æ¶“å©ƒî‚¼éƒå •æ£¿é´?
 
   struct
   {
     uint8_t stat;
     uint8_t LOOP_PERIOD_MS = 10; // 10MS
-    uint8_t RETRY_TTS_CNT = 3;   // ÖØÊÔ´ÎÊı
+    uint8_t RETRY_TTS_CNT = 3;   // é–²å¶ˆç˜¯å¨†â„ƒæšŸ
     uint32_t period_last_ms_st;
-    // uint32_t wait_response_last_ms; // ÉÏ´ÎÊ±¼ä´Á
+    // uint32_t wait_response_last_ms; // æ¶“å©ƒî‚¼éƒå •æ£¿é´?
     uint8_t playbuf[32];
     uint16_t playbuf_len;
     bool play_cmd_f;
@@ -132,7 +136,7 @@ struct
     uint8_t stat;
     uint8_t LOOP_PERIOD_MS = 10; // 10MS
     uint32_t last_ms_st;
-    bool ap_en; // 0:¹Ø±ÕAP, 1:´ò¿ªAP
+    bool ap_en; // 0:éæŠ½æ£´AP, 1:éµæ’³ç´‘AP
     bool config_finish_f;
   } web_server_fsm;
 
@@ -169,7 +173,7 @@ struct
 
   struct
   {
-    uint8_t stat; // Ö¸Ê¾ÁªÍø×´Ì¬»òÖ¸Ê¾µ¹¼ÆÊ±×´Ì¬
+    uint8_t stat; // é¸å›©ãšé‘±æ—‚ç¶‰é˜èˆµâ‚¬ä½¹å¨é¸å›©ãšéŠæ•î…¸éƒå‰å§¸é¬?
     const uint16_t MAIN_SCAN_PERIOD_MS = 500;
     uint32_t main_last_ms;
     bool conn_svr_f;
@@ -190,6 +194,8 @@ struct
 void Key_cb(Key::KeyEvent_et key_event);
 void MQTTRecv_cb(char *topic, uint8_t *payload, uint16_t length);
 void WebServer_cb();
+void setupCaptivePortal();
+String toStringIp(IPAddress ip);
 
 /* function implementation ------------------------------------------------------------------------------------------------- */
 void setup()
@@ -201,7 +207,7 @@ void setup()
   relay.Init(RELAY_GPIO, DOut::ON_POLARITY_HIGH);
   key.Init(KEY_GPIO, INPUT_PULLUP, Key_cb, Key::KEY_LOW);
 
-  softserial.begin(9600); // TODO ´ò¿ªÕâ¸ö£¬¾Í»áµ¼ÖÂÏµÍ³ÎŞ·¨ÔËĞĞ
+  softserial.begin(9600); // TODO éµæ’³ç´‘æ©æ¬é‡œé”›å±½æ°¨æµ¼æ°¬î‡±é‘·å¯¸éƒ´ç¼ç†¸æ£¤å¨‰æ›¡ç¹ç›?
   tts.Init(&softserial);
   disp.Init(STB_PIN, CLK_PIN, DIO_PIN);
   param.Init();
@@ -214,7 +220,7 @@ void loop()
   {
     // tp();
 
-    if (ctrl_fsm.stat == ctrl_fsm.INIT_STAT) // ¸ù¾İÒÑ±£´æµÄ¼ÌµçÆ÷×´Ì¬¿ØÖÆ¼ÌµçÆ÷
+    if (ctrl_fsm.stat == ctrl_fsm.INIT_STAT) // éè§„åµå®¸è¹­ç¹šç€›æ¨¼æ®‘ç¼Ñ…æ•¸é£ã„§å§¸é¬ä½¹å¸¶é’å‰æˆ·é¢é›æ«’
     {
       // tp();
       tpf("free stack:%d, free heap:%d", ESP.getFreeContStack(), ESP.getFreeHeap());
@@ -336,7 +342,6 @@ void loop()
       {
         tpf("wait for receive wifi info");
         ctrl_fsm.wifi_cfg_fsm.stat = 1;
-        // server.send(200, "text/plain", "Received SSID and Password");  // wait for verify that annotation this line whether ok
       }
       else if (ctrl_fsm.wifi_cfg_fsm.stat == 1) // valid wifi info
       {
@@ -345,8 +350,6 @@ void loop()
         {
           ln();
           tpf("config wifi infomation is finished");
-          net_client.WebServer_stop();
-          ctrl_fsm.web_server_fsm.ap_en = false;
           ctrl_fsm.wifi_cfg_fsm.stat = 0;
           ctrl_fsm.stat = ctrl_fsm.CONN_WIFI_STAT;
           ctrl_fsm.web_server_fsm.config_finish_f = false;
@@ -430,7 +433,7 @@ void loop()
     ctrl_fsm.play_voice_fsm.period_last_ms_st = millis();
   }
 #endif
-#if 1 // ÊıÂë¹ÜÏÔÊ¾Âß¼­
+#if 1 // éæ‰®çˆœç» â„ƒæ¨‰ç»€æ´ªâ‚¬æ˜ç·«
   if (millis() - ctrl_fsm.seg_disp_fsm.main_last_ms >= ctrl_fsm.seg_disp_fsm.MAIN_SCAN_PERIOD_MS)
   {
     if (net_client.GetMqttConn() == false)
@@ -443,7 +446,7 @@ void loop()
       disp.DispSeg(0, TM1620::SEG_ROD), disp.DispSeg(1, TM1620::SEG_ROD), disp.DispSeg(2, TM1620::SEG_ROD), disp.DispSeg(3, TM1620::SEG_ROD);
       ctrl_fsm.seg_disp_fsm.stat = 1;
     }
-    else if (ctrl_fsm.seg_disp_fsm.stat == 1) // ¶ÏÍøÊ±,ÊıÂë¹ÜÉÁË¸"-"ÌáÊ¾
+    else if (ctrl_fsm.seg_disp_fsm.stat == 1) // é‚î… ç¶‰éƒ?,éæ‰®çˆœç» ï¿ æ£¯é‘?"-"é»æ„®ãš
     {
       if (ctrl_fsm.seg_disp_fsm.disp_val_f)
         disp.DispSeg(0, TM1620::SEG_NOT_DISPLAY), disp.DispSeg(1, TM1620::SEG_NOT_DISPLAY), disp.DispSeg(2, TM1620::SEG_NOT_DISPLAY), disp.DispSeg(3, TM1620::SEG_NOT_DISPLAY);
@@ -607,7 +610,11 @@ void loop()
     {
       if (millis() - ctrl_fsm.web_server_fsm.last_ms_st >= ctrl_fsm.web_server_fsm.LOOP_PERIOD_MS) // 10ms
       {
-        if (ctrl_fsm.web_server_fsm.ap_en) net_client.WebServer_pool();
+        if (ctrl_fsm.web_server_fsm.ap_en) {
+          dnsServer.processNextRequest();
+          net_client.WebServer_pool();
+        }
+        ctrl_fsm.web_server_fsm.last_ms_st = millis();
       }
     }
   }
@@ -646,7 +653,10 @@ void Key_cb(Key::KeyEvent_et key_event)
   else if (key_event == Key::KeyEvent_et::LONG_CLICK) // wifi config by hot point
   {
     tpf("key long press");
+    uint8_t buf[] = {0xbf,0xaa,0xca,0xbc,0xc5,0xe4,0xcd,0xf8};  // æ’­æŠ¥,å¼€å§‹é…ç½‘
+    tts.SendPlayVoice_cmd(buf, sizeof(buf));
     net_client.WebServer_start((char *)param.cur_data.ap_ssid, (char *)param.cur_data.ap_pwd, WebServer_cb);
+    setupCaptivePortal();
     ctrl_fsm.web_server_fsm.ap_en = true;
     ctrl_fsm.stat = ctrl_fsm.WIFI_INFO_CONFIG_STAT;
   }
@@ -656,10 +666,10 @@ void Key_cb(Key::KeyEvent_et key_event)
   }
 }
 
-void WebServer_cb() // Ìá½»ÅäÖÃĞÅÏ¢Ê±,µ÷ÓÃ´Ëº¯Êı
+void WebServer_cb() 
 {
   tp();
-  ctrl_fsm.wifi_cfg_fsm.ssid = net_client.GetArg((char *)"ssid");
+  ctrl_fsm.wifi_cfg_fsm.ssid = net_client.GetArg("ssid");
   ctrl_fsm.wifi_cfg_fsm.pwd = net_client.GetArg("password");
   Serial.println("Received SSID: " + ctrl_fsm.wifi_cfg_fsm.ssid);
   Serial.println("Received Password: " + ctrl_fsm.wifi_cfg_fsm.pwd);
@@ -670,6 +680,48 @@ void WebServer_cb() // Ìá½»ÅäÖÃĞÅÏ¢Ê±,µ÷ÓÃ´Ëº¯Êı
   {
     ctrl_fsm.web_server_fsm.config_finish_f = true;
   }
+
+  tpf("config wifi infomation is finished");
+  String response = "{\"status\":\"success\",\"message\":\"WiFi é…ç½®å®Œæˆ\"}";
+  NetClient::server.send(200, "application/json", response);
+  delay(800), ESP.wdtFeed(), delay(800), ESP.wdtFeed();
+
+  uint8_t buf[] = {0xc5,0xe4,0xcd,0xf8,0xcd,0xea,0xb3,0xc9};  // æ’­æŠ¥"é…ç½‘å®Œæˆ"çš„GBKç¼–ç 
+  tts.SendPlayVoice_cmd(buf, sizeof(buf));
+
+  net_client.WebServer_stop();
+  ctrl_fsm.web_server_fsm.ap_en = false;
+  ctrl_fsm.wifi_cfg_fsm.stat = 0;
+  ctrl_fsm.stat = ctrl_fsm.CONN_WIFI_STAT;
+  ctrl_fsm.web_server_fsm.config_finish_f = false;
+}
+
+void setupCaptivePortal() {
+  WiFi.mode(WIFI_AP);
+  WiFi.softAPConfig(apIP, apIP, IPAddress(255, 255, 255, 0));
+  WiFi.softAP((char *)param.cur_data.ap_ssid, (char *)param.cur_data.ap_pwd);
+
+  // Configure DNS server to redirect all domains to the AP's IP
+  dnsServer.start(DNS_PORT, "*", apIP);
+
+  NetClient::server.on("/", HTTP_GET, []() {
+    NetClient::server.sendHeader("Location", String("http://") + toStringIp(NetClient::server.client().localIP()), true);
+    NetClient::server.send(302, "text/plain", "");
+  });
+
+  NetClient::server.onNotFound([]() {
+    NetClient::server.sendHeader("Location", String("http://") + toStringIp(NetClient::server.client().localIP()), true);
+    NetClient::server.send(302, "text/plain", "");
+  });
+}
+
+String toStringIp(IPAddress ip) {
+  String res = "";
+  for (int i = 0; i < 3; i++) {
+    res += String((ip >> (8 * i)) & 0xFF) + ".";
+  }
+  res += String(((ip >> 8 * 3)) & 0xFF);
+  return res;
 }
 
 /**

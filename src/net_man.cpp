@@ -48,53 +48,162 @@ CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 -----END CERTIFICATE-----
 )EOF";
 
-const char html[] PROGMEM = R"(
-<!-- FILEPATH: /d:/workspace/1-project/DWY/DWY421/code/DWY421_ESP8266_V2/other/wifi-config.html -->
+// const char html[] PROGMEM = R"(
+// <!-- FILEPATH: /d:/workspace/1-project/DWY/DWY421/code/DWY421_ESP8266_V2/other/wifi-config.html -->
+// <!DOCTYPE html>
+// <html>
+
+// <head>
+//   <title>WiFi 配置</title>
+//   <style>
+//     body {
+//       font-family: Arial, sans-serif;
+//       background-color: #f2f2f2;
+//     }
+
+//     html,
+//     body {
+//       height: 100vh;
+//       margin: 0;
+//       padding: 0;
+//     }
+
+//     .container {
+//       height: 100%;
+//       display: flex;
+//       flex-direction: column;
+//       margin: 0 auto;
+//       padding: 20px;
+//       background-color: #fff;
+//       border-radius: 5px;
+//       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+//     }
+
+//     .form-group {
+//       flex: 1;
+//       margin-bottom: 20px;
+//     }
+
+//     .form-group label {
+//       display: block;
+//       font-weight: bold;
+//       margin-bottom: 5px;
+//     }
+
+//     .form-group input {
+//       width: 100%;
+//       padding: 10px;
+//       border: 1px solid #ccc;
+//       border-radius: 3px;
+//     }
+
+//     .submit-btn {
+//       display: block;
+//       width: 100%;
+//       padding: 10px;
+//       background-color: #4CAF50;
+//       color: #fff;
+//       border: none;
+//       border-radius: 3px;
+//       cursor: pointer;
+//     }
+
+//     .submit-btn:hover {
+//       background-color: #45a049;
+//     }
+
+//     /* 添加媒体查询以适应手机界面 */
+//     @media only screen and (max-width: 600px) {
+//       .container {
+//         max-width: 100%;
+//         height: 100%;
+//         margin: 0;
+//         border-radius: 0;
+//         box-shadow: none;
+//         overflow: auto;
+//       }
+
+//       .form-group input {
+//         padding: 8px;
+//       }
+//     }
+//   </style>
+// </head>
+
+// <body>
+//   <div class="container">
+//     <h2>WiFi 配置</h2>
+//     <form method='POST' action='/setap'>
+//       <div class="form-group">
+//         <label for="ssid">WIFI 账号:</label>
+//         <input type="text" id="ssid" name="ssid" placeholder="输入 WiFi 账号">
+//       </div>
+//       <div class="form-group">
+//         <label for="password">WIFI 密码:</label>
+//         <input type="password" id="password" name="password" placeholder="输入 WiFi 密码">
+//       </div>
+//       <button class="submit-btn" type="submit">配置</button>
+//     </form>
+//   </div>
+// </body>
+
+// </html>
+//   )";
+
+
+
+const char html[] PROGMEM = 
+R"rawliteral(
 <!DOCTYPE html>
 <html>
 
 <head>
   <title>WiFi 配置</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <style>
     body {
       font-family: Arial, sans-serif;
       background-color: #f2f2f2;
-    }
-
-    html,
-    body {
-      height: 100vh;
       margin: 0;
       padding: 0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
     }
 
     .container {
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      margin: 0 auto;
+      width: 90%;
+      max-width: 350px;
       padding: 20px;
       background-color: #fff;
       border-radius: 5px;
       box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
     }
 
-    .form-group {
-      flex: 1;
+    h2 {
+      text-align: center;
+      color: #333;
       margin-bottom: 20px;
+    }
+
+    .form-group {
+      margin-bottom: 15px;
     }
 
     .form-group label {
       display: block;
       font-weight: bold;
       margin-bottom: 5px;
+      color: #555;
     }
 
     .form-group input {
-      width: 100%;
-      padding: 10px;
+      width: calc(100% - 20px);
+      padding: 8px 10px;
       border: 1px solid #ccc;
       border-radius: 3px;
+      font-size: 14px;
     }
 
     .submit-btn {
@@ -106,25 +215,25 @@ const char html[] PROGMEM = R"(
       border: none;
       border-radius: 3px;
       cursor: pointer;
+      font-size: 16px;
     }
 
     .submit-btn:hover {
       background-color: #45a049;
     }
 
-    /* 添加媒体查询以适应手机界面 */
-    @media only screen and (max-width: 600px) {
+    @media only screen and (max-width: 400px) {
       .container {
-        max-width: 100%;
-        height: 100%;
-        margin: 0;
-        border-radius: 0;
-        box-shadow: none;
-        overflow: auto;
+        width: 95%;
+        padding: 15px;
       }
 
       .form-group input {
-        padding: 8px;
+        font-size: 13px;
+      }
+
+      .submit-btn {
+        font-size: 14px;
       }
     }
   </style>
@@ -133,22 +242,76 @@ const char html[] PROGMEM = R"(
 <body>
   <div class="container">
     <h2>WiFi 配置</h2>
-    <form method='POST' action='/setap'>
+    <form id="wifiForm" onsubmit="return submitForm(event)">
       <div class="form-group">
         <label for="ssid">WIFI 账号:</label>
-        <input type="text" id="ssid" name="ssid" placeholder="输入 WiFi 账号">
+        <input type="text" id="ssid" name="ssid" placeholder="输入 WiFi 账号" required>
       </div>
       <div class="form-group">
         <label for="password">WIFI 密码:</label>
-        <input type="password" id="password" name="password" placeholder="输入 WiFi 密码">
+        <input type="password" id="password" name="password" placeholder="输入 WiFi 密码" required>
       </div>
       <button class="submit-btn" type="submit">配置</button>
     </form>
   </div>
+
+  <script>
+    function validateForm() {
+      var ssid = document.getElementById("ssid").value;
+      var password = document.getElementById("password").value;
+
+      if (ssid.trim() === "") {
+        alert("请输入 WiFi 账号");
+        return false;
+      }
+
+      if (password.trim() === "") {
+        alert("请输入 WiFi 密码");
+        return false;
+      }
+
+      if (password.length < 8) {
+        alert("WiFi 密码长度应至少为 8 个字符");
+        return false;
+      }
+
+      return true;
+    }
+
+    function submitForm(event) {
+      event.preventDefault();
+      if (!validateForm()) {
+        return;
+      }
+
+      var form = document.getElementById("wifiForm");
+      var formData = new FormData(form);
+
+      fetch('/setap', {
+        method: 'POST',
+        body: formData
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.status === 'success') {
+          alert(data.message || "配置成功！");
+          form.reset();
+        } else {
+          alert(data.message || "配置失败，请重试。");
+        }
+      })
+      .catch(error => {
+        alert("配置失败，请重试。");
+        console.error('Error:', error);
+      });
+    }
+  </script>
 </body>
 
 </html>
-  )";
+)rawliteral";
+
+
 BearSSL::X509List mqttcert(mqtt_ca_crt);
 // ESP8266WebServer NetClient::server = new ESP8266WebServer(80);
 ESP8266WebServer NetClient::server(80);
@@ -292,17 +455,19 @@ void NetClient::WebServer_pool()
   server.handleClient(); // 处理客户端请求
 }
 
-void NetClient::WebServer_start(char *ap_ssid, char *ap_pwd, void (*pfun)())
+void NetClient::WebServer_start(char *ssid, char *password, void (*callback)())
 {
   tpf("%d", WiFi.status());
   // if (GetWifiConn() == true) WiFi.disconnect();
   WiFi.mode(WIFI_AP);
   tpf("%d", WiFi.status());
-  WiFi.softAP(ap_ssid, ap_pwd);
+  WiFi.softAP(ssid, password);
 
-  // server.on("/", NetClient::WebServerMainHtml);
-  server.on("/", [this]() { this->server.send(200, "text/html", html); });
-  server.on("/setap", HTTP_POST, pfun);
+  // Set up the server route for the main page
+  server.on("/", HTTP_GET, [this]() {
+    server.send(200, "text/html", html);
+  });
+  server.on("/setap", HTTP_POST, callback);
   server.begin(80); // 设置 ESP8266 为 AP 模式并创建 Wi-Fi 网络
 }
 

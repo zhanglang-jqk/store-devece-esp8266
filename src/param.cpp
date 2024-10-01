@@ -168,23 +168,36 @@ uint8_t *Param::GetCurParamAddr(uint8_t id)
   return (uint8_t *)&cur_data + offset;
 }
 
+uint8_t *Param::GetLastParamAddr(uint8_t id)
+{
+  uint16_t offset = 0;
+  for (int i = 0; i < id; i++)
+  {
+    offset += param_size[i];
+  }
+  return (uint8_t *)&last_data + offset;  
+}
+
 void Param::UpdateParam_pool()
 {
   uint8_t isok = memcmp(&cur_data, &last_data, sizeof(cur_data));
   if (isok != 0)
   {
-    // tpf("before param:"), tpt(ToString(&last_data));
+    tpf("before param:"), tpt(ToString(&last_data));
     for (int id = 0; id < Param::PARAM_NUM; id++)
     {
       uint8_t *p_cur_param = GetCurParamAddr(id);
-      uint8_t *p_last_param = GetDefParamAddr(id);
+      uint8_t *p_last_param = GetLastParamAddr(id);
       uint8_t param_size = GetParamSize(id);
       if (memcmp(p_cur_param, p_last_param, param_size) != 0)
       {
+        tp();
         param_tab.WriteParam(id, p_cur_param, param_size);
+        tpbuf(p_cur_param, param_size);
       }
     }
-    // tpf("update param:"), tpt(ToString(&cur_data));
+    
+    tpf("update param:"), tpt(ToString(&cur_data));
     memcpy(&last_data, &cur_data, sizeof(cur_data));
   }
 }

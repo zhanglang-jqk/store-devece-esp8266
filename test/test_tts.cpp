@@ -101,7 +101,7 @@ void setup()
   Serial.begin(115200);
   printf("system begin\n");
   mySerial.begin(9600); // mySerial.printf("Hello world\n");
-  // _tts.Init(&mySerial);
+  _tts.Init(&mySerial);
   // RUN_TEST(testTTS_sendVoiceAndVerifyResponse);
   // pinMode(RX_PIN, OUTPUT);
   UNITY_BEGIN(); // IMPORTANT LINE!
@@ -110,11 +110,11 @@ void setup()
 void loop()
 {
   // testSoftwareSerial();
-  // RUN_TEST(testTTS_sendVoice_nihao);
+  RUN_TEST(testTTS_sendVoice_nihao);
 
   // RUN_TEST(testTTS_sendVoiceAndVerifyResponse);
   // RUN_TEST(test_write_buf);
-  RUN_TEST(test_query_busy_status);
+  // RUN_TEST(test_query_busy_status);
   // RUN_TEST(test_write_buf);
   // RUN_TEST(test_rx_pin_to_output);
   delay(2000);

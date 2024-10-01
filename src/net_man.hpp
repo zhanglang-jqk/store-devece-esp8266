@@ -49,13 +49,14 @@ public:
   void WebServer_stop();
   String GetArg(char *arg);
   /* wifi app -------------------- */
+  
+  static ESP8266WebServer server; // 在端口 80 上创建服务器
 private:
   // BearSSL::WiFiClientSecure wifi_client;
   WiFiClient wifi_client;
   PubSubClient mqtt_client; /* set SSL/TLS certificate */
   WiFiUDP NTP_UDP;
   NTPClient time_client;
-  static ESP8266WebServer server; // 在端口 80 上创建服务器
 
   bool wifi_conn = false;
   bool mqtt_conn = false;
