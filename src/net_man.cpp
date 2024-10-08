@@ -11,6 +11,8 @@
 #include "debug_log.h"
 #include "led.h"
 #include "param.hpp"
+#include <cstdlib>
+#include <cstring>
 /* macro definition -------------------------------------------------------------------------------------------------------- */
 
 /* type definition --------------------------------------------------------------------------------------------------------- */
@@ -395,18 +397,30 @@ bool NetClient::ConnServer(char *server, uint16_t port, char *id, char *username
   // mqtt_client.setCallback(callback);
   // mqtt_conn = mqtt_client.connect(id, username, password);
 
+  mqtt_client.setClient(wifi_client);
   // TODO temporary modify to test use
   // ip：106.75.224.82
   // 端口：1884
   // 账号：dwy_gaiban
   // 密码：gaibanmenjin
-  mqtt_client.setClient(wifi_client);
-  IPAddress ip(106, 75, 224, 82);
-  mqtt_client.setServer(ip, port);
+  AddressType addressType = checkAddressType(server);
+  if (addressType == AddressType::IP) {
+    tpf("IP address");
+    IPAddress ip;
+    ip.fromString(server);
+    mqtt_client.setServer(ip, port);
+  } else if (addressType == AddressType::Domain) {
+    tpf("Domain address");
+    mqtt_client.setServer(server, port);
+  } else {
+    // Handle invalid address
+    return false;
+  }
   mqtt_client.setCallback(callback);
-  username = "dwy_gaiban";
-  password = "gaibanmenjin";
-  mqtt_conn = mqtt_client.connect(id, username, password);
+
+  extern Param param;
+
+  mqtt_conn = mqtt_client.connect(id, (char *)param.cur_data.mqtt_username, (char *)param.cur_data.mqtt_password);
   return mqtt_conn;
 }
 
@@ -488,4 +502,68 @@ String NetClient::GetArg(char *arg)
 {
   return server.arg(arg);
 }
-// network_proc.cpp
+
+// 辅助函数：检查字符串是否全为数字
+bool isAllDigits(const char* str) {
+    while (*str) {
+        if (*str < '0' || *str > '9') return false;
+        str++;
+    }
+    return true;
+}
+
+// 辅助函数：检查IPv4地址的有效性
+bool isValidIPv4(const char* address) {
+    int num, dots = 0;
+    char* ptr;
+    char buf[16]; // IPv4地址最长为15个字符
+
+    if (strlen(address) >= sizeof(buf)) return false;
+    
+    strcpy(buf, address);
+    ptr = strtok(buf, ".");
+    if (ptr == nullptr) return false;
+
+    while (ptr) {
+        if (!isAllDigits(ptr)) return false;
+        num = atoi(ptr);
+        if (num < 0 || num > 255) return false;
+        if (++dots > 3) return false;
+        ptr = strtok(nullptr, ".");
+    }
+    return (dots == 3);
+}
+
+// 辅助函数：检查域名的有效性
+bool isValidDomain(const char* address) {
+    int len = strlen(address);
+    if (len == 0 || len > 253) return false;
+
+    // 检查每个标签
+    int labelLen = 0;
+    for (int i = 0; i < len; i++) {
+        char c = address[i];
+        if (c == '.') {
+            if (labelLen == 0 || labelLen > 63) return false;
+            labelLen = 0;
+        } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || 
+                   (c >= '0' && c <= '9') || c == '-') {
+            labelLen++;
+        } else {
+            return false;
+        }
+    }
+
+    // 检查最后一个标签
+    return (labelLen > 0 && labelLen <= 63);
+}
+
+AddressType NetClient::checkAddressType(const char* address) {
+    if (isValidIPv4(address)) {
+        return AddressType::IP;
+    } else if (isValidDomain(address)) {
+        return AddressType::Domain;
+    } else {
+        return AddressType::Invalid;
+    }
+}

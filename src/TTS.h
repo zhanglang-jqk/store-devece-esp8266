@@ -27,7 +27,7 @@ public:
     BUSYSTATUS_IDLE,
     BUSYSTATUS_ERROR,
 
-    PLAY_VOICE_OK,
+    PLAY_VOICE_CMD_OK,
     PALY_VOICE_BUSY,
     PALY_VOICE_ASK_ERR, // ???,????
   } BusyStatus_et;
@@ -86,13 +86,13 @@ public:
       serial->write(sendbuf, sendbuf_len);
       tpbuf(sendbuf, sendbuf_len);
 
-      return PLAY_VOICE_OK;
+      return PLAY_VOICE_CMD_OK;
 
       // uint8_t ret = serial->read(WAIT_READ_CH_MS); // TODO: 由于软件串口的问题，这里可能会读取到错误的数据,待优化
       // if (ret == 0x41)
       // {
       //   Serial.println("tts is ok");
-      //   return PLAY_VOICE_OK;
+      //   return PLAY_VOICE_CMD_OK;
       // }
       // else
       // {

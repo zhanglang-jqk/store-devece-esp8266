@@ -1,190 +1,135 @@
-软件版本:v1.0
+# 软件版本: v2.0
+## 功能描述
 
-1. 使用mac地址作为设备唯一ID
-2. 为每个设备生成不同的topic(根据设备ID生成),确保设备不会重复接收数据
-3. 新增公共topic,用于client端进行统一控制
-4. 新增,第一次连接到服务器后,自动发布自己的设备编号
+### 一、网络连接
 
+1. 默认 Wi-Fi 凭据：
+   - SSID: 88888888
+   - 密码: 88888888
+
+2. 设备启动流程：
+   - 自动连接 MQTT 服务器
+   - 订阅两个主题：
+     1. `device_no/device_sub_topic`
+     2. `device_global_sub_topic`
+   - 成功连接后，向 `device_no/device_pub_topic` 发送设备信息：
+     - 设备唯一标识（device_no）
+     - 继电器状态等
+
+1. 默认Wi-Fi账号和密码均为：88888888
+2. 设备上电后会自动连接MQTT服务器，并订阅两个主题（device_no/device_sub_topic 和 device_global_sub_topic）。成功连接MQTT服务器后，设备会向device_no/device_pub_topic主题发送当前终端信息，包括设备唯一标识（device_no）和继电器状态等。
+3. 如遇网络断开，终端会自动尝试重新连接Wi-Fi网络，确保设备始终在线。
+
+3. 网络中断处理：
+   - 自动尝试重新连接 Wi-Fi
+   - 确保设备持续在线
+
+### 二、设备标识 (device_no)
+
+1. 用途：代表终端的唯一编号
+2. 默认值：设备的 MAC 地址
+
+### 三、MQTT 主题说明
+
+| 主题 | 用途 | 通信方向 |
+|------|------|----------|
+| `device_no/device_sub_topic` | 接收服务器指令和数据 | 服务器 → 设备 |
+| `device_no/device_pub_topic` | 发送状态更新和事件通知 | 设备 → 服务器 |
+| `device_global_pub_topic` | 广播全局消息 | 设备 → 服务器（所有设备共用） |
+| `device_global_sub_topic` | 接收全局指令和通知 | 服务器 → 设备（所有设备共用） |
+
+注：`device_no` 为设备唯一标识符。
+
+### 四、按键控制
+
+1. 短按功能：
+   - 正常模式：切换开/关状态
+   - 自动关闭模式：按下开启，10 秒后自动关闭
+
+2. 长按功能（6 秒以上）：
+   - 进入配网模式
+   - 设备变为 Wi-Fi 热点：
+     - SSID: ESP8266-AP
+     - 密码: 88888888
+   - 配网步骤：
+     1. 连接到设备热点
+     2. 自动打开配网页面
+     3. 完成配网后设备重新连接 Wi-Fi
+
+### 五、通信协议
+
+- 控制方式：服务器通过 `device_no/device_sub_topic` 或 `device_global_topic` 发送命令
+- 设备响应：对每个命令进行应答（确认、否认或数据回复）
+
+#### 5.1 支持的命令列表
+
+| 命令 | JSON 格式 | 说明 |
+|------|-----------|------|
+| 打开继电器 | `{"open_relay_cmd":""}` | |
+| 关闭继电器 | `{"close_relay_cmd":""}` | |
+| 语音播报 | `{"play_voice_cmd":"b4f3bcd2bac3"}` | "b4f3bcd2bac3" 为 GBK 编码的十六进制字符串，如 "大家好" |
+| 打开倒计时 | `{"start_countdown_cmd":""}` | 需先设置倒计时时间 |
+| 关闭倒计时 | `{"stop_countdown_cmd":""}` | |
+| 修改服务器地址 | `{"set_mqtt_server_cmd":"www.example.com"}` | |
+| 修改 Wi-Fi SSID | `{"set_wifi_ssid_cmd":"xxxx"}` | |
+| 修改 Wi-Fi 密码 | `{"set_wifi_pwd_cmd":"xxxx"}` | |
+| 修改 MQTT 用户名 | `{"set_mqtt_username_cmd":"xxxx"}` | |
+| 修改 MQTT 密码 | `{"set_mqtt_password_cmd":"xxxx"}` | |
+| 设置 MQTT 端口 | `{"set_mqtt_port_cmd":1883}` | |
+| 设置倒计时 | `{"set_countdown_cmd":100}` | 单位：分钟 |
+| 设置开门模式 | `{"set_open_door_mode_cmd":0}` | 0: 正常模式, 1: 常开模式 |
+| 设置设备 ID | `{"set_device_id_cmd":"xxxx"}` | |
+| 获取系统信息 | `{"get_system_info_cmd":""}` | 回复发送至 device_no/device_pub_topic |
+| 恢复出厂设置 | `{"factory_params_cmd":""}` | |
+| 重启设备 | `{"restart_cmd":""}` | |
+
+#### 5.2 消息上报
+
+终端运行过程中，在运行至特殊的状态时，会主动往 device_no/device_pub_topic 和 device_global_pub_topic 上报数据，上报格式为 JSON 格式。
+
+1. 系统信息上报 (上电时,会上报一次)：
+   ```json
+   {"system_info_event":{"soft_ver":"版本号","hard_ver":"版本号","relay":状态,"wifi_ssid":"SSID","wifi_pwd":"密码","mqtt_server":"服务器地址","mqtt_port":端口号,"mqtt_username":"用户名","mqtt_password":"密码","count_down_minute":倒计时分钟数,"count_down_start_f":倒计时状态,"device_id":"设备ID","open_door_mode":开门模式,"auto_close_door_time_s":自动关门时间,"device_sub_topic":"订阅主题","device_pub_topic":"发布主题"}}
+   ```
+
+2. 倒计时完成时，上报：
+   ```json
+   {"countdown_finish_event":1}
+   ```
+
+3. 语音播报成功时，上报：
+   ```json
+   {"play_voice_result_event":1}
+   ```
+
+4. 语音播报失败时，上报：
+   ```json
+   {"play_voice_result_event":0}
+   ```
+
+5. 确认应答时，上报：
+   ```json
+   {"ask":1}
+   ```
+
+6. 否认应答时，上报：
+   ```json
+   {"ask":0}
+   ```
+
+7. 收到未知命令时，上报：
+   ```json
+   {"unknown_cmd":0}
+   ```
+
+8. 继电器状态变化时，上报：
+   ```json
+   {"relay_state_change_event":${state}} or {"relay_state_change_event":${state}}
+   ```
+   其中，${state} 为 0 表示关闭，1 表示打开。
+
+注意：所有这些消息都会同时发送到 device_no/device_pub_topic 和 device_global_pub_topic 两个主题。
 ***
 
-## 功能说明
 
-1. 按键功能
-    1.1. 切换继电器开关,仅在断网时有效
-    1.2. 长按3秒以上,设备重启
-2. 群组功能
-    2.1. 每个终端都允许加入1个群组
-    2.2. 群组topic支持动态修改,支持2种方式修改,本地修改(modbus协议),mqtt协议
-3. 动态参数配置
-    3.1. 可通过2种方式,修改终端配置数据
-        3.1.1. wifi 账号与密码
-        3.1.2. 群组 topic 名称
-        3.1.3. 终端唯一编号
 
-***
-
-## topic 说明
-
-### 说明
-
-deveice_no : 代表设备唯一编号
-
-### 控制指令列表
-
-sw_on_cmd : 打开继电器
-sw_off_cmd : 关闭继电器
-delay_sw_on_cmd : 延时打开继电器
-delay_sw_off_cmd : 延时关闭继电器
-get_sw_status_cmd : 获取继电器状态
-get_read_cfg_cmd : 获取配置信息
-refactory_cmd : 恢复系统参数到出厂状态
-restart : 重启
-
-### toppic 列表
-
-group_control
-   群组控制,往这个群组发送控制命令,将会控制所有已加入这个群组的所有设备
-   继电器状态修改后,会在group_status中上报状态信息
-group_status,
-   群组状态,节点第一次上电时,将会发送自己的deveice_no到已加入群组中
-public_control
-   公共控制,玩这个topic发送命令,将会控制所有在线设备
-   继电器状态修改后,public_status中上报状态信息
-public_status
-   公共状态,所有节点在第1次上电时,将会发送自己的状态到此topic
-drive_no/control
-   节点控制,往此topic发送指令会控制对应的节点
-drive_no/status
-   节点状态,节点第1次上电时,会往此topic发送自己的状态
-   每次继电器状态改变时,也会在此主题上报继电器状态
-drive_no/modify_config
-   节点参数修改,可以修改对应的参数,修改完成后,修改值断电会保存
-drive_no/read_config
-   获取配置信息,
-
-## 举个栗子
-
-## 控制继电器打开
-
-topic:deveice_no/control
-{"cmd":"sw_on_cmd"}
-
-## 读取保存参数
-
-setup1:订阅topic
-drive_no/read_config
-setup2:发送数据
-topic:drive_no/control
-{"cmd":"get_read_cfg_cmd"}
-
-## 获取节点继电器状态
-
-setup1:订阅状态节点
-topic:devece_no/status
-setup2:发送"获取继电器状态"控制指令
-topic:devece_no/control
-{"cmd":"get_sw_status_cmd"}
-
-## 群控
-
-topic:group_control
-{"cmd":"sw_on_cmd"}
-
-## 读取配置信息
-
-setup1: 订阅 drive_no/read_config
-setup2: 发送查询配置信息
-topic: drive_no/control
-{"cmd":"get_read_cfg_cmd"}
-
-## 修改群控topic名称
-
-topic: drive_no/config_modify
-{
-  "group_ctrl_topic":"g123"
-}
-
-## 修改设备唯一编号
-
-drive_no/config_modify
-{
-"drive_no":"123"
-}
-
-## 修改WIFI账号,密码
-
-drive_no/config_modify
-{
-"ssid":"123",
-"password":"123"
-}
-
-## 修改服务器地址,端口号
-
-drive_no/config_modify
-{
-"mqtt_server":"123",
-"mqtt_port":1883
-}
-
-***
-
-## 软件版本: v2.0
-
-### 功能描述
-
-#### 联网功能
-
-1. 默认wifi账号与密码都是:88888888
-2. 上电会默认连接 MQTT 服务器,订阅2个topic(device_no/device_sub_topic),连接mqtt服务器成功后,会往pub_topic主题发送当前终端的信息(包括终端的device_no,继电器状态等信息)
-3. 如果出现断网情况,终端将自动重连wifi
-
-#### TOPIC 说明
-
-1. device_no/device_sub_topic 接收服务端的输入数据
-2. device_no/device_pub_topic 终端发送给服务器的数据
-3. pub_topic 终端发送给服务器的数据,全局
-
-#### 配网功能
-
-1. 长按按键2s,终端将进入配网状态,终端将作为热点,对外发布一个ESP8266-AP的热点,通过手机端连接到此热点(密码:88888888),在手机端的浏览器输入:<http://192.168.4.1> 进入配网网页,确定后,终端将重新连接WIFI
-
-#### 控制命令
-
-1. 服务器端通过往device_no/device_sub_topic发送"命令数据"(具体参考命令列表),控制终端执行各种动作或配置终端各种参数
-
-#### 继电器控制
-
-1. 短按按键,反转继电器状态,同时会上报到,device_no/device_pub_topic
-
-#### device_no
-
-1. 代表终端的唯一编号
-2. 默认将终端的mac地址作为device_no
-
-### 命令列表
-
-1. 修改服务器地址 {"cmd1":"www.baidu.com"}
-2. 修改WIFI账号   {"cmd2":"xxxx"}
-3. 修改WIFI密码
-4. 修改MQTT账号
-5. 修改MQTT密码  
-6. 打开继电器
-7. 关闭继电器
-8. 获取继电器状态
-9. 获取设备ID
-10. 修改MQTT端口号
-11. 语音播报 {"cmd11":"b4f3bcd2bac3"} // 控制播报"大家好","b4f3bcd2bac3"这个是"大家好"的gbk编码的16进制字符串
-12. 继电器上报
-13. 倒计时设置 {"cmd13":100}   // 单位:分钟
-14. 获取倒计时 {"cmd14":""}   // 终端将往device_no/device_sub_topic上报,上包的数据格式为 json 格式
-15. 打开倒计时 {"cmd15":""}   // 注意,设置了倒计时时间后,需要发送此命令后,才开始进行倒计时
-16. 关闭倒计时
-
-### 消息上报
-
-终端运行过程中,在运行至特殊的状态时,会主动往device_no/device_pub_topic上报数据,上报格式为 json 格式
-
-1. 倒计时完成时,上报:{"count down":"finish"}
-2. 接收到获取继电器状态,上报:{"cmd8":"on"}或者{"cmd8":"off"}
-3. 语音播报时,上报:{"cmd11":"ok"} 或者 {"cmd11":"fail"}

@@ -31,13 +31,28 @@ void Param::Init()
   def_data.mqtt_port = DEF_MQTT_PORT;
   strcpy((char *)def_data.mqtt_username, DEF_MQTT_USERNAME);
   strcpy((char *)def_data.mqtt_password, DEF_MQTT_PASSWORD);
-  strcpy((char *)def_data.device_id, DEF_DEVICE_ID);
-  strcpy((char *)def_data.pub_topic, DEF_PUB_TOPIC);
-  strcpy((char *)def_data.device_sub_topic, DEF_DEVICE_SUB_TOPIC);
-  strcpy((char *)def_data.device_pub_topic, DEF_PUB_TOPIC);
+  // strcpy((char *)def_data.device_id, DEF_DEVICE_ID);
+  String mac = WiFi.macAddress();
+  mac.replace(":", "");
+  strcpy((char *)def_data.device_id, mac.c_str());
+
+  strcpy((char *)def_data.device_global_pub_topic, DEF_DEVICE_GLOBAL_PUB_TOPIC);
+  strcpy((char *)def_data.device_global_sub_topic, DEF_DEVICE_GLOBAL_SUB_TOPIC);
+
+  String def_devece_sub_topic = String(DEF_DEVICE_ID) + "/" + DEF_DEVICE_SUB_TOPIC;
+  strcpy((char *)def_data.device_sub_topic, def_devece_sub_topic.c_str());
+
+  // strcpy((char *)def_data.device_pub_topic, DEF_DEVICE_PUB_TOPIC);
+  String def_devece_pub_topic = String(DEF_DEVICE_ID) + "/" + DEF_DEVICE_PUB_TOPIC;
+  strcpy((char *)def_data.device_pub_topic, def_devece_pub_topic.c_str());
+
   def_data.count_down_minute = DEF_COUNT_DOWN;
   strcpy((char *)def_data.ap_ssid, DEF_AP_SSID);
   strcpy((char *)def_data.ap_pwd, DEF_AP_PWD);
+  def_data.open_door_mode = DEF_OPEN_DOOR_MODE;
+  def_data.auto_close_door_time_s = DEF_AUTO_CLOSE_DOOR_TIME_S;
+  def_data.soft_ver = DEF_SOFT_VERSION;
+  def_data.hard_ver = DEF_HARD_VERSION;
 }
 
 void Param::LoadAllParam()
@@ -72,13 +87,17 @@ String Param::ToString(Entry_t *entry)
   str += "mqtt_username=", str += (char *)entry->mqtt_username, str += "\n";
   str += "mqtt_password=", str += (char *)entry->mqtt_password, str += "\n";
   str += "device_id=", str += (char *)entry->device_id, str += "\n";
-  str += "pub_topic=", str += (char *)entry->pub_topic, str += "\n";
+  str += "device_global_pub_topic=", str += (char *)entry->device_global_pub_topic, str += "\n";
+  str += "device_global_sub_topic=", str += (char *)entry->device_global_sub_topic, str += "\n";
   str += "device_sub_topic=", str += (char *)entry->device_sub_topic, str += "\n";
   str += "device_pub_topic=", str += (char *)entry->device_pub_topic, str += "\n";
   str += "count_down=", str += String(entry->count_down_minute), str += "\n";
   str += "ap_ssid=", str += (char *)cur_data.ap_ssid, str += "\n";
   str += "ap_pwd=", str += (char *)cur_data.ap_pwd, str += "\n";
-
+  str += "open_door_mode=", str += String(entry->open_door_mode), str += "\n";
+  str += "auto_close_door_time_s=", str += String(entry->auto_close_door_time_s), str += "\n";
+  str += "soft_ver=", str += String(entry->soft_ver), str += "\n";
+  str += "hard_ver=", str += String(entry->hard_ver), str += "\n";
   return str;
 }
 
@@ -88,6 +107,10 @@ void Param::ResetAllParamToDefault()
   {
     ResetParamToDefault(id);
   }
+  // { // save last data
+  //   memset(&last_data, 0, sizeof(last_data));
+  //   memcpy(&last_data, &cur_data, sizeof(cur_data));
+  // }
 }
 
 uint8_t *Param::GetDefParamAddr(uint8_t id)
@@ -116,6 +139,21 @@ void Param::ResetParamToDefault(uint8_t id)
     memset(def_param_addr, 0, param_size);
     strcpy((char *)def_param_addr, device_id_str.c_str());
   }
+  if (id == DEVICE_SUB_TOPIC_ID || id == DEVICE_PUB_TOPIC_ID)
+  {
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+
+    String topic_str;
+    if(id == DEVICE_SUB_TOPIC_ID)
+      topic_str = mac + "/" + DEF_DEVICE_SUB_TOPIC;
+    else if(id == DEVICE_PUB_TOPIC_ID)
+      topic_str = mac + "/" + DEF_DEVICE_PUB_TOPIC;
+
+    memset(def_param_addr, 0, param_size);
+    strncpy((char*)def_param_addr, topic_str.c_str(), param_size - 1);
+    def_param_addr[param_size - 1] = '\0'; // Ensure null-termination
+  }
   // if (id == 12 || id == 13)
   // {
   //   tpf("def_data address:%p", &def_data);
@@ -123,7 +161,7 @@ void Param::ResetParamToDefault(uint8_t id)
   //   tpbuf(def_param_addr, param_size);
   // }
 
-  param_tab.WriteParam(id, def_param_addr, param_size);
+  // param_tab.WriteParam(id, def_param_addr, param_size);
 
   uint16_t offset = def_param_addr - (uint8_t *)&def_data;
   uint8_t *cur_param_addr = (uint8_t *)&cur_data + offset;
@@ -133,7 +171,7 @@ void Param::ResetParamToDefault(uint8_t id)
   //   tpf("cur_param_addr:%p", cur_param_addr);
   // }
   memcpy(cur_param_addr, def_param_addr, param_size);
-
+  // tpbuf(cur_param_addr, param_size);
   param_tab.WriteParam(id, def_param_addr, param_size);
 }
 
@@ -191,9 +229,9 @@ void Param::UpdateParam_pool()
       uint8_t param_size = GetParamSize(id);
       if (memcmp(p_cur_param, p_last_param, param_size) != 0)
       {
-        tp();
+        // tp();
         param_tab.WriteParam(id, p_cur_param, param_size);
-        tpbuf(p_cur_param, param_size);
+        // tpbuf(p_cur_param, param_size);
       }
     }
     

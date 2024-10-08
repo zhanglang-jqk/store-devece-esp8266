@@ -27,16 +27,34 @@
 // #define DEF_MQTT_PORT 8883
 // #define DEF_MQTT_USERNAME "dianzha202451"
 // #define DEF_MQTT_PASSWORD "zhangguile"
-#define DEF_MQTT_SERVER "mqtt.dianwuyo.com"
+
+
+  
+// #define DEF_MQTT_SERVER "mqtt.dianwuyo.com"
+// #define DEF_MQTT_PORT 1884
+// #define DEF_MQTT_USERNAME "dwy_gaiban"
+// #define DEF_MQTT_PASSWORD "gaibanmenjin"
+
+// ip：106.75.224.82
+// 端口：1884
+// 账号：dwy_gaiban
+// 密码：gaibanmenjin
+#define DEF_MQTT_SERVER "106.75.224.82"
 #define DEF_MQTT_PORT 1884
 #define DEF_MQTT_USERNAME "dwy_gaiban"
 #define DEF_MQTT_PASSWORD "gaibanmenjin"
-#define DEF_PUB_TOPIC "pub_topic"               // 全局发布主题
-#define DEF_DEVICE_SUB_TOPIC "device_sub_topic" // 设备订阅主题
-#define DEF_DEVICE_PUB_TOPIC "device_pub_topic" // 设备发布主题
+
+#define DEF_DEVICE_GLOBAL_PUB_TOPIC "device_global_pub_topic"               // 全局发布主题
+#define DEF_DEVICE_GLOBAL_SUB_TOPIC "device_global_sub_topic" // 全局订阅主题
+#define DEF_DEVICE_SUB_TOPIC "device_sub_topic" // 设备订阅主题,it will be replaced by device_id + device_sub_topic
+#define DEF_DEVICE_PUB_TOPIC "device_pub_topic" // 设备发布主题,it will be replaced by device_id + device_pub_topic
 #define DEF_COUNT_DOWN 60                       // 默认倒计时
 #define DEF_AP_SSID "ESP8266-AP"
+#define DEF_OPEN_DOOR_MODE 0
+#define DEF_AUTO_CLOSE_DOOR_TIME_S 10
 #define DEF_AP_PWD "88888888"
+#define DEF_SOFT_VERSION 1
+#define DEF_HARD_VERSION 1
 
 #define UPDATA_PARAM_PERIOD_MS 1000 // 更新参数周期
 /* type definition --------------------------------------------------------------------------------------------------------- */
@@ -52,19 +70,24 @@ public:
   enum
   {
     RELAY_ID = 0,
-    WIFI_SSID_ID = 1,
-    WIFI_PWD_ID = 2,
-    MQTT_SERVER_ID = 3,
-    MQTT_PORT_ID = 4,
-    MQTT_USERNAME_ID = 5,
-    MQTT_PASSWORD_ID = 6,
-    DEVICE_ID = 7,
-    DEVICE_SUB_TOPIC_ID = 8,
-    DEVICE_PUB_TOPIC_ID = 9,
-    PUB_TOPIC_ID = 10,
-    COUNT_DOWN_ID = 11,
-    AP_SSID = 12,
-    AP_PWD = 13,
+    WIFI_SSID_ID ,
+    WIFI_PWD_ID ,
+    MQTT_SERVER_ID ,
+    MQTT_PORT_ID ,
+    MQTT_USERNAME_ID ,
+    MQTT_PASSWORD_ID ,
+    DEVICE_ID ,
+    DEVICE_GLOBAL_PUB_TOPIC_ID ,
+    DEVICE_GLOBAL_SUB_TOPIC_ID,
+    DEVICE_SUB_TOPIC_ID ,
+    DEVICE_PUB_TOPIC_ID ,
+    COUNT_DOWN_ID ,
+    AP_SSID  ,
+    AP_PWD ,
+    OPEN_DOOR_MODE_ID ,
+    AUTO_CLOSE_DOOR_TIME_S_ID ,
+    SOFT_VER_ID ,
+    HARD_VER_ID ,
     PARAM_NUM
   };
 
@@ -79,12 +102,17 @@ public:
     uint8_t mqtt_username[PARAM_BUFSIZE];
     uint8_t mqtt_password[PARAM_BUFSIZE];
     uint8_t device_id[PARAM_BUFSIZE];
-    uint8_t pub_topic[PARAM_BUFSIZE];
+    uint8_t device_global_pub_topic[PARAM_BUFSIZE];
+    uint8_t device_global_sub_topic[PARAM_BUFSIZE];
     uint8_t device_sub_topic[PARAM_BUFSIZE];
     uint8_t device_pub_topic[PARAM_BUFSIZE];
     uint16_t count_down_minute;
     uint8_t ap_ssid[PARAM_BUFSIZE];
     uint8_t ap_pwd[PARAM_BUFSIZE];
+    uint8_t open_door_mode;
+    uint8_t auto_close_door_time_s;
+    uint8_t soft_ver;
+    uint8_t hard_ver;
   } Entry_t;
 
   Entry_t cur_data;
@@ -99,12 +127,18 @@ public:
                                    sizeof(cur_data.mqtt_username),
                                    sizeof(cur_data.mqtt_password),
                                    sizeof(cur_data.device_id),
-                                   sizeof(cur_data.pub_topic),
+                                   sizeof(cur_data.device_global_pub_topic),
+                                   sizeof(cur_data.device_global_sub_topic),
                                    sizeof(cur_data.device_sub_topic),
                                    sizeof(cur_data.device_pub_topic),
                                    sizeof(cur_data.count_down_minute),
                                    sizeof(cur_data.ap_ssid),
-                                   sizeof(cur_data.ap_pwd)};
+                                   sizeof(cur_data.ap_pwd),
+                                   sizeof(cur_data.open_door_mode),
+                                   sizeof(cur_data.auto_close_door_time_s),
+                                   sizeof(cur_data.soft_ver),
+                                   sizeof(cur_data.hard_ver),
+                                   };
 #pragma pack()
 
   void Init();

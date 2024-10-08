@@ -24,6 +24,7 @@
 #define tpbuf(buf, len)               \
   do                                  \
   {                                   \
+    logf("%s:%d: ", __FILE__, __LINE__); \
     for (int i = 0; i < len; i++)     \
     {                                 \
       Serial.printf("%02x ", buf[i]); \

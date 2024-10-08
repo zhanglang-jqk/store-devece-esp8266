@@ -13,6 +13,12 @@
 /* type definition --------------------------------------------------------------------------------------------------------- */
 typedef std::function<void(char *, uint8_t *, unsigned int)> Callback_t;
 
+enum class AddressType {
+    IP,
+    Domain,
+    Invalid
+};
+
 class NetClient
 {
 public:
@@ -62,6 +68,8 @@ private:
   bool mqtt_conn = false;
   std::function<void(char *, uint8_t *, unsigned int)> callback;
   void WebServerMainHtml();
+
+  AddressType checkAddressType(const char* address);
 };
 
 /* variable declaration ---------------------------------------------------------------------------------------------------- */

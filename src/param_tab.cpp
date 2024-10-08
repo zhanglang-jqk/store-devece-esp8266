@@ -141,7 +141,8 @@ bool ParamTable::IsEmpty(uint8_t id)
   uint8_t tbuf[MAX_BYTE_OF_PARAM];
   memset(tbuf, 0, sizeof(tbuf));
   int8_t isok = ReadParam(id, tbuf, MAX_BYTE_OF_PARAM);
-  if (isok < 0)
+  // tpf("isok=%d", isok);
+  if (isok <= 0)
   {
     // tp();
     return true;

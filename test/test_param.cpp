@@ -37,7 +37,7 @@ void test_load_param()
   logf("mqtt_username=%s\n", _param.mqtt_username);
   logf("mqtt_password=%s\n", _param.mqtt_password);
   logf("device_id=%s\n", _param.device_id);
-  logf("pub_topic=%s\n", _param.pub_topic);
+  logf("device_global_pub_topic=%s\n", _param.device_global_pub_topic);
   logf("device_sub_topic=%s\n", _param.device_sub_topic);
   logf("device_pub_topic=%s\n", _param.device_pub_topic);
   logf("count_down=%d\n", _param.count_down);
