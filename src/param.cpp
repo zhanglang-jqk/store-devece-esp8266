@@ -8,6 +8,7 @@
 /* include ----------------------------------------------------------------------------------------------------------------- */
 #include "include.h"
 #include "param.hpp"
+#include "EEPROM.h"
 
 /* macro definition -------------------------------------------------------------------------------------------------------- */
 
@@ -22,198 +23,71 @@ extern uint8_t g_tmpbuf[1024];
 /* function implementation ------------------------------------------------------------------------------------------------- */
 void Param::Init()
 {
-  param_tab.Init(PARAM_NUM);
-
-  def_data.relay = DEF_RELAY;
-  strcpy((char *)def_data.wifi_ssid, DEF_WIFI_SSID);
-  strcpy((char *)def_data.wifi_pwd, DEF_WIFI_PWD);
-  strcpy((char *)def_data.mqtt_server, DEF_MQTT_SERVER);
-  def_data.mqtt_port = DEF_MQTT_PORT;
-  strcpy((char *)def_data.mqtt_username, DEF_MQTT_USERNAME);
-  strcpy((char *)def_data.mqtt_password, DEF_MQTT_PASSWORD);
-  // strcpy((char *)def_data.device_id, DEF_DEVICE_ID);
-  String mac = WiFi.macAddress();
-  mac.replace(":", "");
-  strcpy((char *)def_data.device_id, mac.c_str());
-
-  strcpy((char *)def_data.device_global_pub_topic, DEF_DEVICE_GLOBAL_PUB_TOPIC);
-  strcpy((char *)def_data.device_global_sub_topic, DEF_DEVICE_GLOBAL_SUB_TOPIC);
-
-  String def_devece_sub_topic = String(DEF_DEVICE_ID) + "/" + DEF_DEVICE_SUB_TOPIC;
-  strcpy((char *)def_data.device_sub_topic, def_devece_sub_topic.c_str());
-
-  // strcpy((char *)def_data.device_pub_topic, DEF_DEVICE_PUB_TOPIC);
-  String def_devece_pub_topic = String(DEF_DEVICE_ID) + "/" + DEF_DEVICE_PUB_TOPIC;
-  strcpy((char *)def_data.device_pub_topic, def_devece_pub_topic.c_str());
-
-  def_data.count_down_minute = DEF_COUNT_DOWN;
-  strcpy((char *)def_data.ap_ssid, DEF_AP_SSID);
-  strcpy((char *)def_data.ap_pwd, DEF_AP_PWD);
-  def_data.open_door_mode = DEF_OPEN_DOOR_MODE;
-  def_data.auto_close_door_time_s = DEF_AUTO_CLOSE_DOOR_TIME_S;
-  def_data.soft_ver = DEF_SOFT_VERSION;
-  def_data.hard_ver = DEF_HARD_VERSION;
+  EEPROM.begin(EEPROM_SIZE);
 }
 
 void Param::LoadAllParam()
 {
-  for (int id = 0; id < Param::PARAM_NUM; id++) // read all param from eeprom
-  {
-    bool is_empty = param_tab.IsEmpty(id);
-    if (is_empty)
-    {
-      tp();
-      ResetParamToDefault(id);
-    }
-    uint8_t *p_param = GetCurParamAddr(id);
-    uint8_t param_size = GetParamSize(id);
+  EEPROM.get(EEPROM_ADDRESS, cur_data);
 
-    param_tab.ReadParam(id, p_param, param_size);
+  uint16_t recv_crc16 = cur_data.crc16;
+  cur_data.crc16 = 0;
+  uint16_t calc_crc16 = crc16((uint8_t *)&cur_data, sizeof(cur_data));
+  tpf("recv_crc16:%x,calc_crc16:%x", recv_crc16, calc_crc16);
+
+  if (recv_crc16 != calc_crc16)
+  {
+    tpf("crc16 is not match, reset all param to default");
+    ResetAllParamToDefault();
+    EEPROM.get(EEPROM_ADDRESS, cur_data);
   }
-  { // save last data
-    memset(&last_data, 0, sizeof(last_data));
-    memcpy(&last_data, &cur_data, sizeof(cur_data));
-  }
+
+  memcpy((uint8_t *)&last_data, (uint8_t *)&cur_data, sizeof(cur_data));
 }
 
 String Param::ToString(Entry_t *entry)
 {
   String str = "Param:\n";
-  str += "relay=", str += String(entry->relay), str += "\n";
-  str += "wifi_ssid=", str += (char *)entry->wifi_ssid, str += "\n";
-  str += "wifi_pwd=", str += (char *)entry->wifi_pwd, str += "\n";
-  str += "mqtt_server=", str += (char *)entry->mqtt_server, str += "\n";
-  str += "mqtt_port=", str += String(entry->mqtt_port), str += "\n";
-  str += "mqtt_username=", str += (char *)entry->mqtt_username, str += "\n";
-  str += "mqtt_password=", str += (char *)entry->mqtt_password, str += "\n";
-  str += "device_id=", str += (char *)entry->device_id, str += "\n";
-  str += "device_global_pub_topic=", str += (char *)entry->device_global_pub_topic, str += "\n";
-  str += "device_global_sub_topic=", str += (char *)entry->device_global_sub_topic, str += "\n";
-  str += "device_sub_topic=", str += (char *)entry->device_sub_topic, str += "\n";
-  str += "device_pub_topic=", str += (char *)entry->device_pub_topic, str += "\n";
-  str += "count_down=", str += String(entry->count_down_minute), str += "\n";
-  str += "ap_ssid=", str += (char *)cur_data.ap_ssid, str += "\n";
-  str += "ap_pwd=", str += (char *)cur_data.ap_pwd, str += "\n";
-  str += "open_door_mode=", str += String(entry->open_door_mode), str += "\n";
-  str += "auto_close_door_time_s=", str += String(entry->auto_close_door_time_s), str += "\n";
-  str += "soft_ver=", str += String(entry->soft_ver), str += "\n";
-  str += "hard_ver=", str += String(entry->hard_ver), str += "\n";
+  str += "soft_ver=" + String(entry->soft_ver) + "\n";
+  str += "hard_ver=" + String(entry->hard_ver) + "\n";
+  str += "protocol_ver=" + String(entry->protocol_ver) + "\n";
+  str += "build_datetime=" + String((char *)entry->build_datetime) + "\n";
+  str += "param_ver=" + String(entry->param_ver) + "\n";
+  str += "relay=" + String(entry->relay) + "\n";
+  str += "wifi_ssid=" + String((char *)entry->wifi_ssid) + "\n";
+  str += "wifi_pwd=" + String((char *)entry->wifi_pwd) + "\n";
+  str += "mqtt_server=" + String((char *)entry->mqtt_server) + "\n";
+  str += "mqtt_port=" + String(entry->mqtt_port) + "\n";
+  str += "mqtt_username=" + String((char *)entry->mqtt_username) + "\n";
+  str += "mqtt_password=" + String((char *)entry->mqtt_password) + "\n";
+  str += "device_id=" + String((char *)entry->device_id) + "\n";
+  str += "device_global_pub_topic=" + String((char *)entry->device_global_pub_topic) + "\n";
+  str += "device_global_sub_topic=" + String((char *)entry->device_global_sub_topic) + "\n";
+  str += "device_sub_topic=" + String((char *)entry->device_sub_topic) + "\n";
+  str += "device_pub_topic=" + String((char *)entry->device_pub_topic) + "\n";
+  str += "ap_ssid=" + String((char *)entry->ap_ssid) + "\n";
+  str += "ap_pwd=" + String((char *)entry->ap_pwd) + "\n";
   return str;
 }
 
 void Param::ResetAllParamToDefault()
 {
-  for (int id = 0; id < Param::PARAM_NUM; id++)
-  {
-    ResetParamToDefault(id);
-  }
-  // { // save last data
-  //   memset(&last_data, 0, sizeof(last_data));
-  //   memcpy(&last_data, &cur_data, sizeof(cur_data));
-  // }
-}
+  String device_id_str = WiFi.macAddress();
+  device_id_str.replace(":", "");
+  strcpy((char *)def_data.device_id, device_id_str.c_str());
 
-uint8_t *Param::GetDefParamAddr(uint8_t id)
-{
-  uint16_t offset = 0;
-  for (int i = 0; i < id; i++)
-  {
-    offset += param_size[i];
-  }
-  return (uint8_t *)&def_data + offset;
-}
+  String device_pub_topic_str = device_id_str + "/" + String((char *)def_data.device_pub_topic);
+  strcpy((char *)def_data.device_pub_topic, device_pub_topic_str.c_str());
 
-uint8_t Param::GetParamSize(uint8_t id)
-{
-  return param_size[id];
-}
+  String device_sub_topic_str = device_id_str + "/" + String((char *)def_data.device_sub_topic);
+  strcpy((char *)def_data.device_sub_topic, device_sub_topic_str.c_str());
 
-void Param::ResetParamToDefault(uint8_t id)
-{
-  uint8_t *def_param_addr = GetDefParamAddr(id);
-  uint8_t param_size = GetParamSize(id);
-  if (id == DEVICE_ID)
-  {
-    String device_id_str = WiFi.macAddress();
-    device_id_str.replace(":", "");
-    memset(def_param_addr, 0, param_size);
-    strcpy((char *)def_param_addr, device_id_str.c_str());
-  }
-  if (id == DEVICE_SUB_TOPIC_ID || id == DEVICE_PUB_TOPIC_ID)
-  {
-    String mac = WiFi.macAddress();
-    mac.replace(":", "");
+  memcpy(&cur_data, &def_data, sizeof(def_data));
+  uint16_t _crc16 = crc16((uint8_t *)&cur_data, sizeof(cur_data));
+  cur_data.crc16 = _crc16;
 
-    String topic_str;
-    if(id == DEVICE_SUB_TOPIC_ID)
-      topic_str = mac + "/" + DEF_DEVICE_SUB_TOPIC;
-    else if(id == DEVICE_PUB_TOPIC_ID)
-      topic_str = mac + "/" + DEF_DEVICE_PUB_TOPIC;
-
-    memset(def_param_addr, 0, param_size);
-    strncpy((char*)def_param_addr, topic_str.c_str(), param_size - 1);
-    def_param_addr[param_size - 1] = '\0'; // Ensure null-termination
-  }
-  // if (id == 12 || id == 13)
-  // {
-  //   tpf("def_data address:%p", &def_data);
-  //   tpf("def_param_addr:%p, param_size:%d", def_param_addr, param_size);
-  //   tpbuf(def_param_addr, param_size);
-  // }
-
-  // param_tab.WriteParam(id, def_param_addr, param_size);
-
-  uint16_t offset = def_param_addr - (uint8_t *)&def_data;
-  uint8_t *cur_param_addr = (uint8_t *)&cur_data + offset;
-  // if (id == 12 || id == 13)
-  // {
-  //   tpf("offset:%d", offset);
-  //   tpf("cur_param_addr:%p", cur_param_addr);
-  // }
-  memcpy(cur_param_addr, def_param_addr, param_size);
-  // tpbuf(cur_param_addr, param_size);
-  param_tab.WriteParam(id, def_param_addr, param_size);
-}
-
-uint8_t Param::WriteParam(uint8_t id, char *strbuf, uint8_t buflen)
-{
-  uint8_t _strlen = strlen(strbuf);
-  if (strbuf[_strlen] != '\0')
-  {
-    tp();
-    return 1;
-  }
-
-  param_tab.WriteParam(id, (uint8_t *)strbuf, _strlen + 1);
-
-  return 0;
-}
-
-uint8_t Param::ReadParam(uint8_t id, char *strbuf, uint8_t buflen)
-{
-  uint8_t len = param_tab.ReadParam(id, (uint8_t *)strbuf, buflen);
-
-  return len;
-}
-
-uint8_t *Param::GetCurParamAddr(uint8_t id)
-{
-  uint16_t offset = 0;
-  for (int i = 0; i < id; i++)
-  {
-    offset += param_size[i];
-  }
-  return (uint8_t *)&cur_data + offset;
-}
-
-uint8_t *Param::GetLastParamAddr(uint8_t id)
-{
-  uint16_t offset = 0;
-  for (int i = 0; i < id; i++)
-  {
-    offset += param_size[i];
-  }
-  return (uint8_t *)&last_data + offset;  
+  EEPROM.put(EEPROM_ADDRESS, cur_data);
+  EEPROM.commit();
 }
 
 void Param::UpdateParam_pool()
@@ -221,21 +95,84 @@ void Param::UpdateParam_pool()
   uint8_t isok = memcmp(&cur_data, &last_data, sizeof(cur_data));
   if (isok != 0)
   {
-    tpf("before param:"), tpt(ToString(&last_data));
-    for (int id = 0; id < Param::PARAM_NUM; id++)
-    {
-      uint8_t *p_cur_param = GetCurParamAddr(id);
-      uint8_t *p_last_param = GetLastParamAddr(id);
-      uint8_t param_size = GetParamSize(id);
-      if (memcmp(p_cur_param, p_last_param, param_size) != 0)
-      {
-        // tp();
-        param_tab.WriteParam(id, p_cur_param, param_size);
-        // tpbuf(p_cur_param, param_size);
-      }
-    }
-    
-    tpf("update param:"), tpt(ToString(&cur_data));
+    // for (int id = 0; id < Param::PARAM_NUM; id++)
+    // {
+    //   uint8_t *p_cur_param = GetCurParamAddr(id);
+    //   uint8_t *p_last_param = GetLastParamAddr(id);
+    //   uint8_t param_size = GetParamSize(id);
+    //   if (memcmp(p_cur_param, p_last_param, param_size) != 0)
+    //   {
+    //     tpf("Param %d updated:", id);
+    //     tpbuf(p_cur_param, param_size);
+    //     param_tab.WriteParam(id, p_cur_param, param_size);
+    //   }
+    // }
+
+    WriteParams();
+    tpt(ToString(&cur_data));
+
     memcpy(&last_data, &cur_data, sizeof(cur_data));
   }
+}
+void Param::UpdateVerParam_pool() // @brief Update parameters when version info in "version.h" changes
+{
+  bool ver_changed = false;
+
+  // Check if soft_ver has changed
+  if (cur_data.soft_ver != SOFT_VER)
+  {
+    cur_data.soft_ver = SOFT_VER;
+    ver_changed = true;
+  }
+
+  // Check if hard_ver has changed
+  if (cur_data.hard_ver != HARDWARE_VER)
+  {
+    cur_data.hard_ver = HARDWARE_VER;
+    ver_changed = true;
+  }
+
+  // Check if protocol_ver has changed
+  if (cur_data.protocol_ver != PROTOCOL_VER)
+  {
+    cur_data.protocol_ver = PROTOCOL_VER;
+    ver_changed = true;
+  }
+
+  // Check if build_datetime_ver has changed
+  const char *currentBuildDateTime = GetBuildDateTime();
+  if (strcmp((const char *)cur_data.build_datetime, currentBuildDateTime) != 0)
+  {
+    strncpy((char *)cur_data.build_datetime, currentBuildDateTime, sizeof(cur_data.build_datetime) - 1);
+    cur_data.build_datetime[sizeof(cur_data.build_datetime) - 1] = '\0'; // Ensure null-termination
+    ver_changed = true;
+  }
+
+  // Check if param_ver has changed
+  if (cur_data.param_ver != PARAM_VER)
+  {
+    cur_data.param_ver = PARAM_VER;
+    ver_changed = true;
+  }
+
+  // If any version info has changed, write the updated data to EEPROM
+  if (ver_changed)
+  {
+    WriteParams();
+    tpf("Version parameters updated and written to EEPROM");
+    tpt(ToString(&cur_data));
+  }
+
+  if (ver_changed)
+  {
+    memcpy(&last_data, &cur_data, sizeof(cur_data));
+  }
+}
+
+void Param::WriteParams()
+{
+  cur_data.crc16 = 0;
+  cur_data.crc16 = crc16((uint8_t *)&cur_data, sizeof(cur_data));
+  EEPROM.put(EEPROM_ADDRESS, cur_data);
+  EEPROM.commit();
 }

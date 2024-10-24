@@ -17,30 +17,29 @@
 class CmdPkt
 {
 public:
-  static inline char *OPEN_RELAY_CMD = "open_relay_cmd";
-  static inline char *CLOSE_RELAY_CMD = "close_relay_cmd";
-  static inline char *PLAY_VOICE_CMD = "play_voice_cmd";
-  static inline char *OPEN_COUNT_DOWN_CMD = "start_countdown_cmd";
-  static inline char *CLOSE_COUNT_DOWN_CMD = "stop_countdown_cmd";
-  static inline char *FACTORY_PARAMS_CMD = "factory_params_cmd";
-  static inline char *RESTART_CMD = "restart_cmd";
+  static inline const char *OPEN_RELAY_CMD = "open_relay_cmd";
+  static inline const char *CLOSE_RELAY_CMD = "close_relay_cmd";
+  static inline const char *SET_RELAY_CMD = "set_relay_cmd";
+  static inline const char *TOGGLE_RELAY_CMD = "toggle_relay_cmd";
+  static inline const char *FACTORY_PARAMS_CMD = "factory_params_cmd";
+  static inline const char *RESTART_CMD = "restart_cmd";
 
-  static inline char *SET_MQTT_SERVER_CMD = "set_mqtt_server_cmd";
-  static inline char *SET_MQTT_PORT_CMD = "set_mqtt_port_cmd";
-  static inline char *SET_WIFI_SSID_CMD = "set_wifi_ssid_cmd";
-  static inline char *SET_WIFI_PWD_CMD = "set_wifi_pwd_cmd";
-  static inline char *SET_MQTT_USERNAME_CMD = "set_mqtt_username_cmd";
-  static inline char *SET_MQTT_PASSWORD_CMD = "set_mqtt_password_cmd";
-  static inline char *SET_COUNT_DOWN_CMD = "set_countdown_cmd";
-  static inline char *SET_OPEN_DOOR_MODE_CMD = "set_open_door_mode_cmd";
-  static inline char *SET_AUTO_CLOSE_DOOR_TIME_CMD = "set_auto_close_door_time_cmd";
-  static inline char *SET_DEVECE_ID_CMD = "set_device_id_cmd";
-  static inline char *SET_SOFT_VER_CMD = "set_soft_ver_cmd";
-  static inline char *SET_HARD_VER_CMD = "set_hard_ver_cmd";
-  static inline char *SET_DEVICE_GLOBAL_SUB_TOPIC_CMD = "set_device_global_sub_topic_cmd";
-  static inline char *SET_DEVICE_GLOBAL_PUB_TOPIC_CMD = "set_device_global_pub_topic_cmd";
+  static inline const char *SET_MQTT_SERVER_CMD = "set_mqtt_server_cmd";
+  static inline const char *SET_MQTT_PORT_CMD = "set_mqtt_port_cmd";
+  static inline const char *SET_WIFI_SSID_CMD = "set_wifi_ssid_cmd";
+  static inline const char *SET_WIFI_PWD_CMD = "set_wifi_pwd_cmd";
+  static inline const char *SET_MQTT_USERNAME_CMD = "set_mqtt_username_cmd";
+  static inline const char *SET_MQTT_PASSWORD_CMD = "set_mqtt_password_cmd";
+  // static inline const char *SET_COUNT_DOWN_CMD = "set_countdown_cmd";
+  // static inline const char *SET_OPEN_DOOR_MODE_CMD = "set_open_door_mode_cmd";
+  // static inline const char *SET_AUTO_CLOSE_DOOR_TIME_CMD = "set_auto_close_door_time_cmd";
+  static inline const char *SET_DEVECE_ID_CMD = "set_device_id_cmd";
+  static inline const char *SET_SOFT_VER_CMD = "set_soft_ver_cmd";
+  static inline const char *SET_HARD_VER_CMD = "set_hard_ver_cmd";
+  static inline const char *SET_DEVICE_GLOBAL_SUB_TOPIC_CMD = "set_device_global_sub_topic_cmd";
+  static inline const char *SET_DEVICE_GLOBAL_PUB_TOPIC_CMD = "set_device_global_pub_topic_cmd";
 
-  static inline char *GET_SYSTEM_INFO_CMD = "get_system_info_cmd";
+  static inline const char *GET_SYSTEM_INFO_CMD = "get_system_info_cmd";
 
   void GetCmdNo(char *cmd_no, uint8_t *payload, uint16_t payload_len)
   {

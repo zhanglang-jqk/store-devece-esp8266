@@ -152,10 +152,8 @@ CAUw7C29C79Fv1C5qfPrmAESrciIxpg0X40KPMbp1ZWVbd4=
 // </html>
 //   )";
 
-
-
-const char html[] PROGMEM = 
-R"rawliteral(
+const char html[] PROGMEM =
+    R"rawliteral(
 <!DOCTYPE html>
 <html>
 
@@ -313,7 +311,6 @@ R"rawliteral(
 </html>
 )rawliteral";
 
-
 BearSSL::X509List mqttcert(mqtt_ca_crt);
 // ESP8266WebServer NetClient::server = new ESP8266WebServer(80);
 ESP8266WebServer NetClient::server(80);
@@ -343,6 +340,8 @@ uint8_t NetClient::ConnWifi(String ssid, String password)
     WiFi.mode(WIFI_STA);
     WiFi.begin(ssid, password);
 
+    led.ToggleBegin(100);
+
     conn_result = WIFI_CONNECTING, fsm.stat = 1;
   }
   if (fsm.stat == 1) // wait for WiFi connection
@@ -367,8 +366,6 @@ uint8_t NetClient::ConnWifi(String ssid, String password)
       }
       fsm.last_ms = millis();
     }
-
-    // led.ToggleEnd();
   }
   if (fsm.stat == 2)
   {
@@ -383,6 +380,7 @@ uint8_t NetClient::ConnWifi(String ssid, String password)
   }
   if (fsm.stat == 3)
   {
+    led.ToggleEnd();
     memset(&fsm, 0, sizeof(fsm)); // clean fsm flags
     // fsm.conn_result = (WiFiConnResult_et)0, fsm.stat = 0, fsm.conn_run_cnt = 0, fsm.last_ms = 0;
   }
@@ -404,23 +402,25 @@ bool NetClient::ConnServer(char *server, uint16_t port, char *id, char *username
   // 账号：dwy_gaiban
   // 密码：gaibanmenjin
   AddressType addressType = checkAddressType(server);
-  if (addressType == AddressType::IP) {
-    tpf("IP address");
+  if (addressType == AddressType::IP)
+  {
     IPAddress ip;
     ip.fromString(server);
     mqtt_client.setServer(ip, port);
-  } else if (addressType == AddressType::Domain) {
+  }
+  else if (addressType == AddressType::Domain)
+  {
     tpf("Domain address");
     mqtt_client.setServer(server, port);
-  } else {
+  }
+  else
+  {
     // Handle invalid address
     return false;
   }
+  mqtt_conn = mqtt_client.connect(id, username, password);
   mqtt_client.setCallback(callback);
 
-  extern Param param;
-
-  mqtt_conn = mqtt_client.connect(id, (char *)param.cur_data.mqtt_username, (char *)param.cur_data.mqtt_password);
   return mqtt_conn;
 }
 
@@ -478,9 +478,7 @@ void NetClient::WebServer_start(char *ssid, char *password, void (*callback)())
   WiFi.softAP(ssid, password);
 
   // Set up the server route for the main page
-  server.on("/", HTTP_GET, [this]() {
-    server.send(200, "text/html", html);
-  });
+  server.on("/", HTTP_GET, [this]() { server.send(200, "text/html", html); });
   server.on("/setap", HTTP_POST, callback);
   server.begin(80); // 设置 ESP8266 为 AP 模式并创建 Wi-Fi 网络
 }
@@ -504,66 +502,110 @@ String NetClient::GetArg(char *arg)
 }
 
 // 辅助函数：检查字符串是否全为数字
-bool isAllDigits(const char* str) {
-    while (*str) {
-        if (*str < '0' || *str > '9') return false;
-        str++;
-    }
-    return true;
+bool isAllDigits(const char *str)
+{
+  while (*str)
+  {
+    if (*str < '0' || *str > '9') return false;
+    str++;
+  }
+  return true;
 }
 
 // 辅助函数：检查IPv4地址的有效性
-bool isValidIPv4(const char* address) {
-    int num, dots = 0;
-    char* ptr;
-    char buf[16]; // IPv4地址最长为15个字符
+// 检查IPv4地址的有效性
+bool isValidIPv4(const char *address)
+{
+  int num, dots = 0;
+  char *ptr;
+  char buf[16]; // IPv4地址最长为15个字符
 
-    if (strlen(address) >= sizeof(buf)) return false;
-    
-    strcpy(buf, address);
-    ptr = strtok(buf, ".");
-    if (ptr == nullptr) return false;
+  // 检查地址长度是否超过缓冲区大小
+  if (strlen(address) >= sizeof(buf))
+  {
+    tp();
+    return false;
+  }
 
-    while (ptr) {
-        if (!isAllDigits(ptr)) return false;
-        num = atoi(ptr);
-        if (num < 0 || num > 255) return false;
-        if (++dots > 3) return false;
-        ptr = strtok(nullptr, ".");
+  // 复制地址到缓冲区以便进行修改
+  strcpy(buf, address);
+
+  // 使用strtok分割地址字符串
+  ptr = strtok(buf, ".");
+  if (ptr == nullptr)
+  {
+    tp();
+    return false;
+  }
+
+  // 遍历每个IP地址段
+  while (ptr)
+  {
+    if (!isAllDigits(ptr))
+    {
+      tp();
+      return false; // 检查是否全为数字
     }
-    return (dots == 3);
+    num = atoi(ptr); // 将字符串转换为整数
+    if (num < 0 || num > 255)
+    {
+      tp();
+      return false; // 检查数值范围
+    }
+    if (++dots > 4)
+    {
+      tp();
+      return false; // 检查分隔符数量
+    }
+    ptr = strtok(nullptr, "."); // 获取下一个地址段
+  }
+
+  return true;
 }
 
 // 辅助函数：检查域名的有效性
-bool isValidDomain(const char* address) {
-    int len = strlen(address);
-    if (len == 0 || len > 253) return false;
+bool isValidDomain(const char *address)
+{
+  int len = strlen(address);
+  if (len == 0 || len > 253) return false; // 检查域名总长度, 不能为空或超过253个字符
 
-    // 检查每个标签
-    int labelLen = 0;
-    for (int i = 0; i < len; i++) {
-        char c = address[i];
-        if (c == '.') {
-            if (labelLen == 0 || labelLen > 63) return false;
-            labelLen = 0;
-        } else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || 
-                   (c >= '0' && c <= '9') || c == '-') {
-            labelLen++;
-        } else {
-            return false;
-        }
+  // 检查每个标签 (域名中以点分隔的部分)
+  int labelLen = 0;
+  for (int i = 0; i < len; i++)
+  {
+    char c = address[i];
+    if (c == '.')
+    {
+      // 每个标签长度必须在1到63之间
+      if (labelLen == 0 || labelLen > 63) return false;
+      labelLen = 0; // 重置标签长度计数器
     }
+    else if ((c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-')
+    {
+      labelLen++; // 合法字符, 增加标签长度
+    }
+    else
+    {
+      return false; // 非法字符, 域名无效
+    }
+  }
 
-    // 检查最后一个标签
-    return (labelLen > 0 && labelLen <= 63);
+  // 检查最后一个标签
+  return (labelLen > 0 && labelLen <= 63); // 确保最后一个标签长度也合法
 }
 
-AddressType NetClient::checkAddressType(const char* address) {
-    if (isValidIPv4(address)) {
-        return AddressType::IP;
-    } else if (isValidDomain(address)) {
-        return AddressType::Domain;
-    } else {
-        return AddressType::Invalid;
-    }
+AddressType NetClient::checkAddressType(const char *address)
+{
+  if (isValidIPv4(address))
+  {
+    return AddressType::IP;
+  }
+  else if (isValidDomain(address))
+  {
+    return AddressType::Domain;
+  }
+  else
+  {
+    return AddressType::Invalid;
+  }
 }

@@ -21,4 +21,7 @@
 #include <ESP8266WiFi.h>
 
 #include "debug_log.h"
+#include "checksum.h"
+#include "version.h"
+#include "main.h"
 #endif // __INCLUDE_H_

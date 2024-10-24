@@ -1,39 +1,33 @@
-Exception Cause: Not found
+Exception Cause: 9  [LoadStoreAlignmentCause: Load or store to an unaligned address]
 
-0x4020b33e: std::__allocated_ptr<std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> > >::__allocated_ptr(std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> >&, std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0>*) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/allocated_ptr.h:53
- (inlined by) std::__allocated_ptr<std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> > > std::__allocate_guarded<std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> > >(std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> >&) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/allocated_ptr.h:97
-0x40210736: operator new(unsigned int) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/abi.cpp:47
-0x4020b33e: std::__allocated_ptr<std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> > >::__allocated_ptr(std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> >&, std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0>*) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/allocated_ptr.h:53
- (inlined by) std::__allocated_ptr<std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> > > std::__allocate_guarded<std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> > >(std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> >&) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/allocated_ptr.h:97
-0x4020b3e5: std::__allocated_ptr<std::allocator<std::_Sp_counted_ptr_inplace<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>, (__gnu_cxx::_Lock_policy)0> > >::get() at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/allocated_ptr.h:85
- (inlined by) std::__shared_count<(__gnu_cxx::_Lock_policy)0>::__shared_count<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>>(BearSSL::br_x509_insecure_context*&, std::_Sp_alloc_shared_tag<std::allocator<BearSSL::br_x509_insecure_context> >) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/shared_ptr_base.h:681
- (inlined by) std::__shared_ptr<BearSSL::br_x509_insecure_context, (__gnu_cxx::_Lock_policy)0>::__shared_ptr<std::allocator<BearSSL::br_x509_insecure_context>>(std::_Sp_alloc_shared_tag<std::allocator<BearSSL::br_x509_insecure_context> >) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/shared_ptr_base.h:1371
- (inlined by) std::shared_ptr<BearSSL::br_x509_insecure_context>::shared_ptr<std::allocator<BearSSL::br_x509_insecure_context>>(std::_Sp_alloc_shared_tag<std::allocator<BearSSL::br_x509_insecure_context> >) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/shared_ptr.h:408
- (inlined by) std::shared_ptr<BearSSL::br_x509_insecure_context> std::allocate_shared<BearSSL::br_x509_insecure_context, std::allocator<BearSSL::br_x509_insecure_context>>(std::allocator<BearSSL::br_x509_insecure_context> const&) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/shared_ptr.h:860
- (inlined by) std::shared_ptr<BearSSL::br_x509_insecure_context> std::make_shared<BearSSL::br_x509_insecure_context>() at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/shared_ptr.h:876
- (inlined by) BearSSL::WiFiClientSecureCtx::_installClientX509Validator() at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src/WiFiClientSecureBearSSL.cpp:1058
-0x40210717: operator new(unsigned int) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/abi.cpp:41
-0x4020baf4: BearSSL::WiFiClientSecureCtx::_connectSSL(char const*) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src/WiFiClientSecureBearSSL.cpp:1158
-0x40105fa9: ets_timer_arm_new at ??:?
-0x40210cb5: esp_try_delay(unsigned int, unsigned int, unsigned int) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:182 (discriminator 4)
-0x40209fb6: void esp_delay<ClientContext::connect(ip4_addr*, unsigned short)::{lambda()#1}>(unsigned int, ClientContext::connect(ip4_addr*, unsigned short)::{lambda()#1}&&, unsigned int) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/coredecls.h:69
- (inlined by) void esp_delay<ClientContext::connect(ip4_addr*, unsigned short)::{lambda()#1}>(unsigned int, ClientContext::connect(ip4_addr*, unsigned short)::{lambda()#1}&&) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/coredecls.h:78
- (inlined by) ClientContext::connect(ip4_addr*, unsigned short) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src/include/ClientContext.h:147
- (inlined by) WiFiClient::connect(IPAddress, unsigned short) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src/WiFiClient.cpp:164
-0x4020bda0: BearSSL::WiFiClientSecureCtx::connect(char const*, unsigned short) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\libraries\ESP8266WiFi\src/WiFiClientSecureBearSSL.cpp:229
-0x402145f4: std::_Function_base::~_Function_base() at ??:?
-0x402145f4: std::_Function_base::~_Function_base() at ??:?
-0x40203058: NetClient::ConnWifi(String, String) at D:\workspace\1-project\DWY\DWY421\code\DWY421_ESP8266_V2/src/net_man.cpp:151
-0x402145f4: std::_Function_base::~_Function_base() at ??:?
-0x40201828: loop at D:\workspace\1-project\DWY\DWY421\code\DWY421_ESP8266_V2/src/main.cpp:199
-0x401002c1: __wrap_spi_flash_read at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_phy.cpp:320
-0x4020cd23: EEPROMClass::begin(unsigned int) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\libraries\EEPROM/EEPROM.cpp:63
-0x4020d0a1: EspClass::flashRead(unsigned int, unsigned int*, unsigned int) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/Esp.cpp:932
-0x4020cd34: EEPROMClass::begin(unsigned int) at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\libraries\EEPROM/EEPROM.cpp:72
-0x402033a8: std::enable_if<std::__and_<std::__not_<std::__is_tuple_like<std::_Any_data> >, std::is_move_constructible<std::_Any_data>, std::is_move_assignable<std::_Any_data> >::value, void>::type std::swap<std::_Any_data>(std::_Any_data&, std::_Any_data&) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/move.h:197
- (inlined by) std::function<void (char*, unsigned char*, unsigned int)>::swap(std::function<void (char*, unsigned char*, unsigned int)>&) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/std_function.h:483
- (inlined by) std::function<void (char*, unsigned char*, unsigned int)>::operator=(std::function<void (char*, unsigned char*, unsigned int)> const&) at c:\users\11345\.platformio\packages\toolchain-xtensa\xtensa-lx106-elf\include\c++\10.3.0\bits/std_function.h:398
- (inlined by) NetClient::Init(std::function<void (char*, unsigned char*, unsigned int)>) at D:\workspace\1-project\DWY\DWY421\code\DWY421_ESP8266_V2/src/net_man.cpp:85
-0x4010026c: ets_post at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:238
-0x40210af2: loop_wrapper() at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:258
-0x401010e5: cont_wrapper at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/cont.S:81
+0x40206e6e: bool ArduinoJson::V720PB22::detail::VariantRefBase<ArduinoJson::V720PB22::detail::MemberProxy<ArduinoJson::V720PB22::JsonObject, char const*> >::doSet<ArduinoJson::V720PB22::Converter<unsigned short, void>, unsigned short const&>(unsigned short const&, ArduinoJson::V720PB22::detail::integral_constant<bool, true>) const at D:\workspace\1-project\DWY\DWY311\code\DWY311_ESP8266/.pio\libdeps\d1\ArduinoJson\src/ArduinoJson/Variant/VariantRefBaseImpl.hpp:150
+ (inlined by) bool ArduinoJson::V720PB22::detail::VariantRefBase<ArduinoJson::V720PB22::detail::MemberProxy<ArduinoJson::V720PB22::JsonObject, char const*> >::doSet<ArduinoJson::V720PB22::Converter<unsigned short, void>, unsigned short const&>(unsigned short const&) const at D:\workspace\1-project\DWY\DWY311\code\DWY311_ESP8266/.pio\libdeps\d1\ArduinoJson\src/ArduinoJson/Variant/VariantRefBase.hpp:298
+ (inlined by) bool ArduinoJson::V720PB22::detail::VariantRefBase<ArduinoJson::V720PB22::detail::MemberProxy<ArduinoJson::V720PB22::JsonObject, char const*> >::set<unsigned short>(unsigned short const&) const at D:\workspace\1-project\DWY\DWY311\code\DWY311_ESP8266/.pio\libdeps\d1\ArduinoJson\src/ArduinoJson/Variant/VariantRefBase.hpp:80
+ (inlined by) ArduinoJson::V720PB22::detail::MemberProxy<ArduinoJson::V720PB22::JsonObject, char const*>& ArduinoJson::V720PB22::detail::MemberProxy<ArduinoJson::V720PB22::JsonObject, char const*>::operator=<unsigned short>(unsigned short const&) at D:\workspace\1-project\DWY\DWY311\code\DWY311_ESP8266/.pio\libdeps\d1\ArduinoJson\src/ArduinoJson/Object/MemberProxy.hpp:33
+ (inlined by) loop at D:\workspace\1-project\DWY\DWY311\code\DWY311_ESP8266/src/main.cpp:479
+0x40225978: __ssputs_r at /workdir/repo/newlib/newlib/libc/stdio/nano-vfprintf.c:232
+0x40225978: __ssputs_r at /workdir/repo/newlib/newlib/libc/stdio/nano-vfprintf.c:232
+0x4021df91: _printf_i at /workdir/repo/newlib/newlib/libc/stdio/nano-vfprintf_i.c:196 (discriminator 1)
+0x40225978: __ssputs_r at /workdir/repo/newlib/newlib/libc/stdio/nano-vfprintf.c:232
+0x402258b4: __ssputs_r at /workdir/repo/newlib/newlib/libc/stdio/nano-vfprintf.c:179
+0x40225dc8: _svfprintf_r at /workdir/repo/newlib/newlib/libc/stdio/nano-vfprintf.c:662
+0x401002a4: ets_post at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:238
+0x40105689: lmacTxFrame at ??:?
+0x4010320c: rcReachRetryLimit at ??:?
+0x4010526e: lmacMSDUAged at ??:?
+0x401002a4: ets_post at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:238
+0x40104bbd: lmacRecycleMPDU at ??:?
+0x40105171: lmacMSDUAged at ??:?
+0x4010573b: lmacRxDone at ??:?
+0x40105449: lmacProcessAckTimeout at ??:?
+0x40103716: wDev_ProcessFiq at ??:?
+0x4010320c: rcReachRetryLimit at ??:?
+0x401002a4: ets_post at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:238
+0x402138bc: loop_end at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:246
+0x4000050c: ?? ??:0
+0x4020aa22: Param::Init() at D:\workspace\1-project\DWY\DWY311\code\DWY311_ESP8266/src/param.cpp:54
+0x402145ba: __attachInterruptFunctionalArg at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_wiring_digital.cpp:207
+0x402011e9: Key::Init(unsigned char, unsigned char, void (*)(Key::KeyEvent_et), Key::KeyPressState_et, unsigned int) at D:\workspace\1-project\DWY\DWY311\code\DWY311_ESP8266/src\device\key/key.cpp:30 (discriminator 4)
+0x401002a4: ets_post at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:238
+0x402138f2: loop_wrapper() at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/core_esp8266_main.cpp:258
+0x40101255: cont_wrapper at C:\Users\11345\.platformio\packages\framework-arduinoespressif8266\cores\esp8266/cont.S:81
