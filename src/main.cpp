@@ -204,13 +204,18 @@ struct
     PublicData_t query_relay_state_response;
     PublicData_t query_device_no_response;
     PublicData_t ask_response;  // 纭畾缂?
-    PublicData_t nask_response; // 鎷栨嫿缂?
+    PublicData_t nask_response; // 鎷栨嫿?
     PublicData_t unknown_response;
     uint32_t last_ms;
     const uint16_t LOOP_PERIOD_MS = 1000;
     uint8_t stat;
   } public_data_fsm;
-
+  struct
+  {
+    uint8_t stat;
+    const uint16_t MAIN_SCAN_PERIOD_MS = 100;
+    uint32_t last_ms; 
+  } adc_fsm;
 } ctrl_fsm;
 /* function declaration ------------------------------------------------------------------------------------------------- */
 void Key_cb(Key::KeyEvent_et key_event);
@@ -235,6 +240,9 @@ void setup()
   disp.Init(STB_PIN, CLK_PIN, DIO_PIN);
   param.Init();
   net_client.Init(MQTTRecv_cb);
+
+  // 初始化 ADC 引脚
+  pinMode(A0, INPUT);   // 设置 A0 为输入模式
 }
 
 void loop()
@@ -247,7 +255,7 @@ void loop()
     {
       // tp();
       tpf("free stack:%d, free heap:%d", ESP.getFreeContStack(), ESP.getFreeHeap());
-      param.ResetAllParamToDefault();
+      // param.ResetAllParamToDefault();
       param.LoadAllParam();
       tpt(param.ToString(&param.cur_data));
 
@@ -272,11 +280,11 @@ void loop()
       }
       else if (wifi_conn_result == NetClient::WIFI_CONNECT_TIMEOUT)
       {
-        if (++ctrl_fsm.retry_wifi_cnt > ctrl_fsm.RETRY_WIFI_CONN_CNT)
-        {
-          ctrl_fsm.stat = ctrl_fsm.SYS_RESTART_STAT;
-          tpf("try connect wifi is failed so then restart system");
-        }
+        // if (++ctrl_fsm.retry_wifi_cnt > ctrl_fsm.RETRY_WIFI_CONN_CNT)
+        // {
+        // ctrl_fsm.stat = ctrl_fsm.SYS_RESTART_STAT;
+        // tpf("try connect wifi is failed so then restart system");
+        // }
         tpf("The %d times, try conenct to wifi is failed", ctrl_fsm.retry_wifi_cnt);
       }
     }
@@ -489,12 +497,12 @@ void loop()
       }
       else if (ctrl_fsm.count_down_fsm.stat == 1) // display count down on number segment
       {
-
         if ((millis() - ctrl_fsm.count_down_fsm.minute_last_ms_st >= 60 * 1000) || (ctrl_fsm.count_down_fsm.minute_last_ms_st == 0)) // 1 minute
         {
           tp();
           if (ctrl_fsm.count_down_fsm.minute_last_ms_st != 0) param.cur_data.count_down_minute--;
 
+          // 计算小时和分钟
           uint8_t hour = param.cur_data.count_down_minute / 60;
           uint8_t hour_10 = hour / 10 % 10, hour_1 = hour % 10;
           uint8_t minute = param.cur_data.count_down_minute % 60;
@@ -503,73 +511,27 @@ void loop()
           tpf("count down minute is %d", param.cur_data.count_down_minute);
           tpf("hour_10:%d, hour_1:%d, minute_10:%d, minute_1:%d", hour_10, hour_1, minute_10, minute_1);
 
+          // 清除所有显示位
           for (int i = 0; i < 4; i++)
             disp.DispSeg(i, TM1620::SEG_NOT_DISPLAY);
 
-          uint8_t skip_num = 0;
-          if (param.cur_data.count_down_minute / 60 >= 10)
-            skip_num = 0;
-          else if (param.cur_data.count_down_minute / 60 >= 1)
-            skip_num = 1;
-          else if (param.cur_data.count_down_minute % 60 >= 10)
-            skip_num = 2;
-          else if (param.cur_data.count_down_minute % 60 >= 1)
-            skip_num = 3;
-          switch (skip_num)
-          {
-          case 0:
-            disp.DispSeg(0, hour_10);
-          case 1:
-            disp.DispSeg(1, hour_1);
-          case 2:
-            disp.DispSeg(2, minute_10);
-          case 3:
-            disp.DispSeg(3, minute_1);
-          }
+          delay(500);
+
+          // 始终显示4位数,前导零也显示
+          disp.DispSeg(0, hour_10);   // 小时十位
+          disp.DispSeg(1, hour_1);    // 小时个位
+          disp.DispSeg(2, minute_10); // 分钟十位
+          disp.DispSeg(3, minute_1);  // 分钟个位
 
           ctrl_fsm.count_down_fsm.minute_last_ms_st = millis();
         }
+
         if ((millis() - ctrl_fsm.count_down_fsm.sec_last_ms_st >= 1000) || (ctrl_fsm.count_down_fsm.sec_last_ms_st == 0)) // 1s
         {
-          uint8_t skip_num = 0;
-          if (param.cur_data.count_down_minute / 60 >= 10)
-            skip_num = 0;
-          else if (param.cur_data.count_down_minute / 60 >= 1)
-            skip_num = 1;
-          else if (param.cur_data.count_down_minute % 60 >= 10)
-            skip_num = 2;
-          else if (param.cur_data.count_down_minute % 60 >= 1)
-            skip_num = 3;
-          // tpf("skip_num:%d", skip_num);
-          if (skip_num > 1) // only toggle display ":"
-          {
-            if (ctrl_fsm.count_down_fsm.disp_colon_f)
-            {
-              // tp();
-              disp.DispSeg(1, TM1620::SEG_NOT_DISPLAY);
-            }
-            else
-            {
-              // tp();
-              disp.DispSeg(1, TM1620::SEG_COLON);
-            }
-          }
-          else // must be display number and ":"
-          {
-            uint8_t hour = param.cur_data.count_down_minute / 60;
-            uint8_t hour_1 = hour % 10;
-
-            if (ctrl_fsm.count_down_fsm.disp_colon_f)
-            {
-              // tp();
-              disp.DispSegCode(1, disp.GetCodeNum(hour_1)); // only display "number"
-            }
-            else
-            {
-              // tp();
-              disp.DispSegCode(1, disp.GetCodeNum(hour_1) | 0x80); // display ":" and "number"
-            }
-          }
+          // 始终显示数字
+          uint8_t hour = param.cur_data.count_down_minute / 60;
+          uint8_t hour_1 = hour % 10;
+          disp.DispSegCode(1, disp.GetCodeNum(hour_1) | (ctrl_fsm.count_down_fsm.disp_colon_f ? 0x80 : 0x00)); // 数字加冒号
 
           ctrl_fsm.count_down_fsm.disp_colon_f = !ctrl_fsm.count_down_fsm.disp_colon_f;
           ctrl_fsm.count_down_fsm.sec_last_ms_st = millis();
@@ -663,6 +625,16 @@ if (ctrl_fsm.key_fsm.stat == 0)
         bool state = relay.Toggle();
         tpf("relay state is %d", state);
         param.cur_data.relay = (uint8_t)state;
+        
+        // 播报继电器状态
+        if(state) {
+            uint8_t buf[] = {0xbf,0xaa,0xc3,0xc5}; // 播报"开门"
+            tts.SendPlayVoice_cmd(buf, sizeof(buf));
+        } else {
+            uint8_t buf[] = {0xb9,0xd8,0xc3,0xc5}; // 播报"关门" 
+            tts.SendPlayVoice_cmd(buf, sizeof(buf));
+        }
+        
         ctrl_fsm.key_fsm.event_f = 0;
     }
     else if (ctrl_fsm.key_fsm.event_f == 2)  // auto close door
@@ -670,6 +642,8 @@ if (ctrl_fsm.key_fsm.stat == 0)
       if(ctrl_fsm.key_fsm.event_stat == 0)
       {
         param.cur_data.relay = (uint8_t)relay.On();
+        uint8_t buf[] = {0xbf,0xaa,0xc3,0xc5}; // 播报"开门"
+        tts.SendPlayVoice_cmd(buf, sizeof(buf));
         ctrl_fsm.key_fsm.event_stat = 1;
       }
       else if(ctrl_fsm.key_fsm.event_stat == 1)
@@ -677,13 +651,15 @@ if (ctrl_fsm.key_fsm.stat == 0)
         if(millis() - ctrl_fsm.key_fsm.event_last_ms_st >= param.cur_data.auto_close_door_time_s * 1000)
         {
           param.cur_data.relay = (uint8_t)relay.Off();
+          uint8_t buf[] = {0xb9,0xd8,0xc3,0xc5}; // 播报"关门"
+          tts.SendPlayVoice_cmd(buf, sizeof(buf));
           ctrl_fsm.key_fsm.event_stat = 0;
           ctrl_fsm.key_fsm.event_f = 0;
         }
       }
       else if(ctrl_fsm.key_fsm.event_stat == 2) // wifi infomation config
       {
-        uint8_t buf[] = {0xbf,0xaa,0xca,0xbc,0xc5,0xe4,0xcd,0xf8};  // 播报,开始配�
+        uint8_t buf[] = {0xbf,0xaa,0xca,0xbc,0xc5,0xe4,0xcd,0xf8};  // 播��"开始配网"
         tts.SendPlayVoice_cmd(buf, sizeof(buf));
         net_client.WebServer_start((char *)param.cur_data.ap_ssid, (char *)param.cur_data.ap_pwd, WebServer_cb);
         setupCaptivePortal();
@@ -695,6 +671,14 @@ if (ctrl_fsm.key_fsm.stat == 0)
     else if (ctrl_fsm.key_fsm.event_f == 3) 
     {
         ctrl_fsm.key_fsm.event_f = 0;
+    }
+    else if (ctrl_fsm.key_fsm.event_f == 6)
+    {
+      tpf("key triple press");
+      // 这里添加三击的处理逻辑
+      uint8_t buf[] = {0xc8,0xfd,0xbb,0xf7,0xb0,0xb4,0xbc,0xfc}; // 播报"三击按键"
+      tts.SendPlayVoice_cmd(buf, sizeof(buf));
+      // 可以在这里添加你想要的三击功能
     }
   }  
   }
@@ -819,7 +803,40 @@ if (ctrl_fsm.key_fsm.stat == 0)
       }
     }
   }
+  
 #endif
+
+  if (millis() - ctrl_fsm.adc_fsm.last_ms >= ctrl_fsm.adc_fsm.MAIN_SCAN_PERIOD_MS)
+  {
+    if(ctrl_fsm.adc_fsm.stat == 0)
+    {
+      int adc_value = analogRead(A0);
+      // tpf("adc value is %d", adc_value);
+      if (adc_value < 800) {
+        tpf("adc value is less than 800, open door");
+        if (param.cur_data.open_door_mode == 0) {
+          ctrl_fsm.key_fsm.event_f = 1; // direct toggle door
+          ctrl_fsm.adc_fsm.stat = 1;  
+        }
+        else if (param.cur_data.open_door_mode == 1) {
+          ctrl_fsm.key_fsm.event_stat = 0; // auto close door
+          ctrl_fsm.key_fsm.event_last_ms_st = millis();
+          ctrl_fsm.key_fsm.event_f = 2; // auto close door
+          ctrl_fsm.adc_fsm.stat = 1;
+        }
+      }
+    }
+    else if(ctrl_fsm.adc_fsm.stat == 1) // 避免重复触发
+    {
+      int adc_value = analogRead(A0);
+      if (adc_value >= 800) {
+        ctrl_fsm.adc_fsm.stat = 0;
+      }
+    }
+
+    ctrl_fsm.adc_fsm.last_ms = millis();
+  }
+
 }
 
 void Key_cb(Key::KeyEvent_et key_event)
@@ -837,15 +854,49 @@ void Key_cb(Key::KeyEvent_et key_event)
       ctrl_fsm.key_fsm.event_f = 2; // auto close door
     }
   }
-  else if (key_event == Key::KeyEvent_et::LONG_CLICK) // wifi config by hot point
+  else if (key_event == Key::KeyEvent_et::LONG_CLICK)
   {
     tpf("key long press");
-    ctrl_fsm.key_fsm.event_f = 2; // wifi info config
-    ctrl_fsm.key_fsm.event_stat = 2;
+    if (ctrl_fsm.stat == ctrl_fsm.WIFI_INFO_CONFIG_STAT) {
+      // 如果当前在配网状态,则退出配网
+      uint8_t buf[] = {0xcd,0xa3,0xd6,0xb9,0xc5,0xe4,0xcd,0xf8}; // 播报"停止配网"
+      tts.SendPlayVoice_cmd(buf, sizeof(buf));
+      
+      net_client.WebServer_stop();
+      ctrl_fsm.web_server_fsm.ap_en = false;
+      ctrl_fsm.wifi_cfg_fsm.stat = 0;
+      ctrl_fsm.stat = ctrl_fsm.CONN_WIFI_STAT;
+      ctrl_fsm.web_server_fsm.config_finish_f = false;
+    } else {
+      // 不在配网状态,则进入配网
+      ctrl_fsm.key_fsm.event_f = 2; // wifi info config
+      ctrl_fsm.key_fsm.event_stat = 2;
+    }
   }
   else if (key_event == Key::KeyEvent_et::DOUBLE_CLICK)
   {
-    tpf("key double press");
+    tpf("key double press, restarting system...");
+    uint8_t buf[] = {0xc9,0xe8,0xb1,0xb8,0xd6,0xd8,0xc6,0xf4}; // 播报"设备重启"
+    tts.SendPlayVoice_cmd(buf, sizeof(buf));
+    static Ticker restartTicker;
+    restartTicker.once(2, []() {
+      ESP.restart();
+    });
+  }
+  else if (key_event == Key::KeyEvent_et::TRIPLE_CLICK)
+  {
+    tpf("key triple press, resetting to factory defaults...");
+    uint8_t buf[] = {0xbb,0xd6,0xb8,0xb4,0xb3,0xf6,0xb3,0xa7,0xc9,0xe8,0xd6,0xc3}; // 播报"恢复出厂设置"
+    tts.SendPlayVoice_cmd(buf, sizeof(buf));
+    
+    // 恢复出厂设置
+    param.ResetAllParamToDefault();
+    
+    // 2秒后重��设备
+    static Ticker restartTicker;
+    restartTicker.once(2, []() {
+      ESP.restart();
+    });
   }
 }
 
@@ -1011,6 +1062,11 @@ void MQTTRecv_cb(char *topic, uint8_t *payload, uint16_t length)
       cmd_pkt.ExtractIntOfBuf((char *)payload, length, &count_down);
       tpf("count down: %d", count_down);
       param.cur_data.count_down_minute = count_down;
+      
+      // 重置倒计时相关时间戳,触发立即更新显示
+      ctrl_fsm.count_down_fsm.minute_last_ms_st = 0;
+      ctrl_fsm.count_down_fsm.sec_last_ms_st = 0;
+      
       ctrl_fsm.public_data_fsm.ask_response.send_f = true;
     }
     else if (strcmp(cmd_no, CmdPkt::OPEN_COUNT_DOWN_CMD) == 0)

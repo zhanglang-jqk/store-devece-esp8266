@@ -53,6 +53,15 @@ void Param::Init()
   def_data.auto_close_door_time_s = DEF_AUTO_CLOSE_DOOR_TIME_S;
   def_data.soft_ver = DEF_SOFT_VERSION;
   def_data.hard_ver = DEF_HARD_VERSION;
+
+  // 如果 ap_ssid 为空,则生成默认的基于 MAC 地址的 SSID
+  if(strlen((char*)def_data.ap_ssid) == 0) {
+    String mac = WiFi.macAddress();
+    mac.replace(":", "");
+    mac = mac.substring(6); // 只取后6位
+    String defaultAPSSID = "ESP_" + mac;
+    strncpy((char*)def_data.ap_ssid, defaultAPSSID.c_str(), PARAM_BUFSIZE);
+  }
 }
 
 void Param::LoadAllParam()

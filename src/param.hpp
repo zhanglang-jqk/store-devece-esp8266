@@ -49,7 +49,7 @@
 #define DEF_DEVICE_SUB_TOPIC "device_sub_topic" // 设备订阅主题,it will be replaced by device_id + device_sub_topic
 #define DEF_DEVICE_PUB_TOPIC "device_pub_topic" // 设备发布主题,it will be replaced by device_id + device_pub_topic
 #define DEF_COUNT_DOWN 60                       // 默认倒计时
-#define DEF_AP_SSID "ESP8266-AP"
+#define DEF_AP_SSID "" // 实际的 SSID 会在运行时根据 MAC 地址生成
 #define DEF_OPEN_DOOR_MODE 0
 #define DEF_AUTO_CLOSE_DOOR_TIME_S 10
 #define DEF_AP_PWD "88888888"

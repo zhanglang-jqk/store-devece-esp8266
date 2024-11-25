@@ -99,9 +99,8 @@ void Key::pool()
   }
   if (fsm.stat == 1)
   {
-    if (millis() - fsm.last_ms >= fsm.IDENTIFY_MS) // 按键被按下100ms后,识别按键的模式
+    if (millis() - fsm.last_ms >= fsm.IDENTIFY_MS)
     {
-
       for (int i = 0; i < fsm.press_cnt; i++)
       {
         tpf("index:%d, timestamp:%d", i, fsm.press_ms_st[i]);
@@ -113,7 +112,21 @@ void Key::pool()
         {
           if (fsm.long_cnt <= (DEFAULT_SHORT_PRESS_TIME_MS / fsm.IDENTIFY_MS))
           {
-            fsm.stat = 2;
+            if (fsm.press_cnt == 1)
+            {
+              tp();
+              fsm.stat = 2; // 单击
+            }
+            else if (fsm.press_cnt == 2)
+            {
+              tp();
+              fsm.stat = 3; // 双击
+            }
+            else if (fsm.press_cnt == 3) // 添加三击检测
+            {
+              tp();
+              fsm.stat = 6; // 三击
+            }
           }
           else
           {
@@ -123,36 +136,28 @@ void Key::pool()
         else // key press
         {
           fsm.long_cnt++;
-          // logf("%d\n", fsm.long_cnt);
           logf(">");
           if (fsm.long_cnt >= (DEFAULT_LONG_TIME_MS / fsm.IDENTIFY_MS))
           {
             fsm.stat = 4;
-            // fsm.long_cnt = 0;
           }
         }
       }
-      // else if (fsm.press_cnt > 1)
-      // {
-      //   fsm.stat = 3;
-      // }
       fsm.last_ms = millis();
     }
   }
-  if (fsm.stat == 2)
+  if (fsm.stat == 2) // 单击
   {
     app_cb(CLICK);
-    // tpf("key short press");
     fsm.stat = 5;
   }
-  // if (fsm.stat == 3) // 双击识别
-  // {
-  //   app_cb(DOUBLE_CLICK);
-  //   fsm.stat = 5;
-  // }
-  if (fsm.stat == 4) // 长按识别
+  if (fsm.stat == 3) // 双击
   {
-    // wait for key release
+    app_cb(DOUBLE_CLICK);
+    fsm.stat = 5;
+  }
+  if (fsm.stat == 4) // 长按
+  {
     if (digitalRead(pin) == Key::key_press_stat)
     {
       logf("<");
@@ -161,14 +166,11 @@ void Key::pool()
     {
       ln();
       app_cb(LONG_CLICK);
-      // tpf("key long press");
       fsm.stat = 5;
     }
   }
-
-  if (fsm.stat == 5) // clean about fsm flags
+  if (fsm.stat == 5) // 清理状态
   {
-    // memset(&fsm, 0, sizeof(fsm));
     fsm.stat = 0;
     fsm.press_cnt = 0;
     fsm.last_ms = 0;
@@ -178,6 +180,11 @@ void Key::pool()
     {
       fsm.press_ms_st[i] = 0;
     }
+  }
+  if (fsm.stat == 6) // 三击
+  {
+    app_cb(TRIPLE_CLICK);
+    fsm.stat = 5;
   }
 }
 

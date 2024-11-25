@@ -23,6 +23,7 @@ public:
   {
     CLICK,
     DOUBLE_CLICK,
+    TRIPLE_CLICK,
     LONG_CLICK,
   } KeyEvent_et;
 
